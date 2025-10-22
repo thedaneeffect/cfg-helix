@@ -6,10 +6,14 @@ completion-trigger-len=1
 idle-timeout=0
 true-color = true
 
-[editor.whitespace]
-render="none"
+[editor.whitespace.render]
+tab="all"
+newline="all"
+
+[editor.whitespace.characters]
+tab=">"
+newline="¬"
 
 [editor.indent-guides]
 render=true
 character='┆'
-
