@@ -1,0 +1,15 @@
+theme='gruvbox'
+
+[editor]
+line-number="relative"
+completion-trigger-len=1
+idle-timeout=0
+true-color = true
+
+[editor.whitespace]
+render="none"
+
+[editor.indent-guides]
+render=true
+character='┆'
+
