@@ -6,7 +6,7 @@ My development environment configuration for WSL + Windows Terminal + Helix edit
 
 - **Helix Editor Config** (`config.toml`) - Custom Helix settings
 - **Windows Terminal Settings** (`settings.json`) - Terminal appearance and behavior
-- **Fonts** (`fonts.zip`) - Custom fonts for the terminal
+- **Fonts** (`fonts/`) - Custom fonts for the terminal
 - **Setup Script** (`setup.sh`) - Automated installation script
 
 ## Quick Start
@@ -53,6 +53,6 @@ You can run individual parts:
 ├── setup.sh        # Main installation script
 ├── config.toml     # Helix editor configuration
 ├── settings.json   # Windows Terminal settings
-├── fonts.zip       # Custom fonts archive
+├── fonts/          # Custom fonts directory
 └── README.md       # This file
 ```
