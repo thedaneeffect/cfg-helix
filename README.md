@@ -7,14 +7,14 @@ My development environment configuration for WSL + Windows Terminal + Helix edit
 **One-liner installation:**
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/cfg-helix/master/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/env-wsl/master/bootstrap.sh)
 ```
 
 **Or clone and run manually:**
 
 ```bash
-git clone https://github.com/thedaneeffect/cfg-helix.git
-cd cfg-helix
+git clone https://github.com/thedaneeffect/env-wsl.git
+cd env-wsl
 ./setup.sh
 ```
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="https://github.com/thedaneeffect/cfg-helix.git"
+REPO_URL="https://github.com/thedaneeffect/env-wsl.git"
 TEMP_DIR=$(mktemp -d)
 
 echo "→ Cloning configuration repository..."
