@@ -71,7 +71,10 @@ install_fonts() {
     shopt -u nullglob
 
     if [[ $count -gt 0 ]]; then
-        echo "✓ Installed $count fonts"
+        echo "→ Registering fonts with Windows..."
+        # Run PowerShell script to register fonts
+        powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ./install_fonts.ps1)" 2>/dev/null
+        echo "✓ Installed and registered $count fonts"
     else
         echo "✗ No fonts found"
         return 1
