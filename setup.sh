@@ -3,52 +3,30 @@ set -euo pipefail
 
 # Ensure dependencies are installed
 ensure_dependencies() {
-    echo "==> Checking dependencies..."
-
     # Check for Homebrew
     if ! command -v brew >/dev/null 2>&1; then
-        echo "Homebrew not found. Installing..."
+        echo "→ Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
         # Add brew to PATH for this session
         if [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
             eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         fi
-    else
-        echo "✓ Homebrew installed"
+        echo "✓ Installed Homebrew"
     fi
 
-    # Check for yq
-    if ! command -v yq >/dev/null 2>&1; then
-        echo "yq not found. Installing..."
-        brew install yq
-    else
-        echo "✓ yq installed"
-    fi
+    # Install missing dependencies
+    local deps=(yq helix go fzf go-task)
+    local cmds=(yq hx go fzf task)
 
-    # Check for helix
-    if ! command -v hx >/dev/null 2>&1; then
-        echo "helix not found. Installing..."
-        brew install helix
-    else
-        echo "✓ helix installed"
-    fi
-
-    # Check for go
-    if ! command -v go >/dev/null 2>&1; then
-        echo "go not found. Installing..."
-        brew install go
-    else
-        echo "✓ go installed"
-    fi
-
-    # Check for fzf
-    if ! command -v fzf >/dev/null 2>&1; then
-        echo "fzf not found. Installing..."
-        brew install fzf
-    else
-        echo "✓ fzf installed"
-    fi
+    for i in "${!deps[@]}"; do
+        if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
+            echo "→ Installing ${deps[$i]}..."
+            brew install "${deps[$i]}" && echo "✓ Installed ${deps[$i]}"
+        else
+            echo "✓ ${deps[$i]} (already installed)"
+        fi
+    done
 }
 
 # Check if running in WSL
@@ -61,26 +39,23 @@ is_wsl() {
 
 # Get Windows LocalAppData path (shared by both operations)
 get_localappdata() {
-    wslpath "$(cmd.exe /c 'echo %LOCALAPPDATA%' | tr -d '\r')"
+    wslpath "$(cmd.exe /c 'echo %LOCALAPPDATA%' 2>/dev/null | tr -d '\r')"
 }
 
 # Install fonts from fonts/ directory
 install_fonts() {
-    echo "==> Installing fonts..."
-
     if ! is_wsl; then
-        echo "⚠ Skipping font installation (not in WSL environment)"
+        echo "⊘ Skipping fonts (not WSL)"
         return 0
     fi
 
     local fonts_dir="./fonts"
-    [[ -d "$fonts_dir" ]] || { echo "Error: $fonts_dir directory not found"; return 1; }
+    [[ -d "$fonts_dir" ]] || { echo "✗ Error: $fonts_dir not found"; return 1; }
 
     local localappdata=$(get_localappdata)
     local user_fonts="$localappdata/Microsoft/Windows/Fonts"
     mkdir -p "$user_fonts"
 
-    # Copy font files to Windows fonts directory
     local count=0
     for font in "$fonts_dir"/*.{ttf,otf,TTF,OTF}; do
         [[ -f "$font" ]] || continue
@@ -88,110 +63,88 @@ install_fonts() {
         ((count++))
     done
 
-    if [[ $count -eq 0 ]]; then
-        echo "⚠ No font files found in $fonts_dir"
+    if [[ $count -gt 0 ]]; then
+        echo "✓ Installed $count fonts"
+    else
+        echo "✗ No fonts found"
         return 1
     fi
-
-    echo "✓ Installed $count font files"
 }
 
 # Apply Windows Terminal settings
 apply_settings() {
-    echo "==> Applying Windows Terminal settings..."
-
     if ! is_wsl; then
-        echo "⚠ Skipping Windows Terminal settings (not in WSL environment)"
+        echo "⊘ Skipping Windows Terminal (not WSL)"
         return 0
     fi
 
     local localappdata=$(get_localappdata)
     local local_patch="./settings.json"
 
-    # Validate source file
-    [[ -f "$local_patch" ]] || { echo "Error: $local_patch not found"; return 1; }
+    [[ -f "$local_patch" ]] || { echo "✗ Error: $local_patch not found"; return 1; }
 
-    # Find Windows Terminal package directory
     local wt_package=$(find "$localappdata/Packages" -maxdepth 1 -name "Microsoft.WindowsTerminal_*" -type d 2>/dev/null | head -n 1)
-    [[ -n "$wt_package" ]] || { echo "Error: Windows Terminal package not found in $localappdata/Packages"; return 1; }
+    [[ -n "$wt_package" ]] || { echo "✗ Error: Windows Terminal not found"; return 1; }
 
     local wt_settings="$wt_package/LocalState/settings.json"
-    [[ -f "$wt_settings" ]] || { echo "Error: Windows Terminal settings not found at $wt_settings"; return 1; }
+    [[ -f "$wt_settings" ]] || { echo "✗ Error: settings.json not found"; return 1; }
 
-    # Backup
-    local backup="$wt_settings.backup.$(date +%s)"
-    cp "$wt_settings" "$backup"
-    echo "Backed up to: $backup"
-
-    # Merge: local patch overwrites WT settings
+    cp "$wt_settings" "$wt_settings.backup.$(date +%s)"
     yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \
       "$wt_settings" "$local_patch" > /tmp/merged.json
-
-    # Atomic write
     mv /tmp/merged.json "$wt_settings"
-    echo "✓ Settings applied"
+    echo "✓ Applied Windows Terminal settings"
 }
 
 # Install Helix config
 install_helix_config() {
-    echo "==> Installing Helix config..."
     local config_source="./config.toml"
     local config_dest="$HOME/.config/helix/config.toml"
 
-    # Validate source exists
-    [[ -f "$config_source" ]] || { echo "Error: $config_source not found"; return 1; }
+    [[ -f "$config_source" ]] || { echo "✗ Error: $config_source not found"; return 1; }
 
-    # Create config directory if needed
     mkdir -p "$(dirname "$config_dest")"
-
-    # Backup existing config if present
-    if [[ -f "$config_dest" ]]; then
-        local backup="$config_dest.backup.$(date +%s)"
-        cp "$config_dest" "$backup"
-        echo "Backed up existing config to: $backup"
-    fi
-
-    # Copy config
+    [[ -f "$config_dest" ]] && cp "$config_dest" "$config_dest.backup.$(date +%s)"
     cp "$config_source" "$config_dest"
-    echo "✓ Helix config installed to $config_dest"
+    echo "✓ Installed Helix config"
 }
 
 # Configure fzf in bashrc
 configure_fzf() {
-    echo "==> Configuring fzf in .bashrc..."
     local bashrc="$HOME/.bashrc"
-    local fzf_line='eval "$(fzf --bash)"'
-
-    # Create .bashrc if it doesn't exist
     touch "$bashrc"
 
-    # Check if fzf is already configured
-    if grep -qF "$fzf_line" "$bashrc"; then
-        echo "✓ fzf already configured in .bashrc"
+    if ! grep -qF 'fzf --bash' "$bashrc"; then
+        echo -e '\neval "$(fzf --bash)"' >> "$bashrc"
+        echo "✓ Configured fzf"
     else
-        echo "" >> "$bashrc"
-        echo "$fzf_line" >> "$bashrc"
-        echo "✓ Added fzf configuration to .bashrc"
+        echo "✓ fzf (already configured)"
     fi
 }
 
 # Configure GOPATH in bashrc
 configure_gopath() {
-    echo "==> Configuring GOPATH in .bashrc..."
     local bashrc="$HOME/.bashrc"
-    local gopath_export='export PATH="$PATH:$(go env GOPATH)/bin"'
-
-    # Create .bashrc if it doesn't exist
     touch "$bashrc"
 
-    # Check if GOPATH is already in PATH
-    if grep -qF 'go env GOPATH' "$bashrc"; then
-        echo "✓ GOPATH already configured in .bashrc"
+    if ! grep -qF 'go env GOPATH' "$bashrc"; then
+        echo -e '\n# Add Go binaries to PATH\nexport PATH="$PATH:$(go env GOPATH)/bin"' >> "$bashrc"
+        echo "✓ Configured GOPATH"
     else
-        echo "" >> "$bashrc"
-        echo "# Add Go binaries to PATH" >> "$bashrc"
-        echo "$gopath_export" >> "$bashrc"
-        echo "✓ Added GOPATH to .bashrc"
+        echo "✓ GOPATH (already configured)"
+    fi
+}
+
+# Configure task completion in bashrc
+configure_task() {
+    local bashrc="$HOME/.bashrc"
+    touch "$bashrc"
+
+    if ! grep -qF 'task --completion bash' "$bashrc"; then
+        echo -e '\n# task completion\neval "$(task --completion bash)"' >> "$bashrc"
+        echo "✓ Configured task completion"
+    else
+        echo "✓ task completion (already configured)"
     fi
 }
 
@@ -216,34 +169,32 @@ main() {
         go)
             configure_gopath
             ;;
+        task)
+            configure_task
+            ;;
         all)
             install_fonts
             apply_settings
             install_helix_config
             configure_fzf
             configure_gopath
+            configure_task
             ;;
         *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|go|all]"
+            echo "Usage: $0 [fonts|settings|helix|fzf|go|task|all]"
             echo "  fonts    - Install fonts only"
             echo "  settings - Apply Windows Terminal settings only"
             echo "  helix    - Install Helix config only"
             echo "  fzf      - Configure fzf in .bashrc only"
             echo "  go       - Configure GOPATH in .bashrc only"
+            echo "  task     - Configure task completion in .bashrc only"
             echo "  all      - Do everything (default)"
             exit 1
             ;;
     esac
 
     echo ""
-    echo "============================================"
-    echo "✓ Setup complete!"
-    echo ""
-    echo "To apply changes to your current shell, run:"
-    echo "  source ~/.bashrc"
-    echo ""
-    echo "Or simply restart your terminal."
-    echo "============================================"
+    echo "✓ Setup complete. Run 'source ~/.bashrc' to apply changes."
 }
 
 main "$@"

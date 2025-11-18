@@ -2,43 +2,53 @@
 
 My development environment configuration for WSL + Windows Terminal + Helix editor.
 
+## Quick Start
+
+**One-liner installation:**
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/cfg-helix/master/bootstrap.sh)
+```
+
+**Or clone and run manually:**
+
+```bash
+git clone https://github.com/thedaneeffect/cfg-helix.git
+cd cfg-helix
+./setup.sh
+```
+
 ## What's Included
 
 - **Helix Editor Config** (`config.toml`) - Custom Helix settings
 - **Windows Terminal Settings** (`settings.json`) - Terminal appearance and behavior
 - **Fonts** (`fonts/`) - Custom fonts for the terminal
 - **Setup Script** (`setup.sh`) - Automated installation script
-
-## Quick Start
-
-Run the setup script to install everything:
-
-```bash
-./setup.sh
-```
-
-This will:
-1. Install dependencies (Homebrew, yq, helix) if needed
-2. Install fonts to Windows
-3. Merge Windows Terminal settings
-4. Install Helix config to `~/.config/helix/config.toml`
+- **Bootstrap Script** (`bootstrap.sh`) - One-liner installer
 
 ## Selective Installation
 
-You can run individual parts:
+Run specific parts only:
 
 ```bash
 ./setup.sh fonts     # Install fonts only
 ./setup.sh settings  # Apply Windows Terminal settings only
 ./setup.sh helix     # Install Helix config only
+./setup.sh fzf       # Configure fzf only
+./setup.sh go        # Configure GOPATH only
+./setup.sh task      # Configure task completion only
+./setup.sh all       # Everything (default)
 ```
 
 ## What the Script Does
 
-- **Dependency Management**: Automatically installs Homebrew, yq, and helix if missing
-- **Backup**: Creates timestamped backups before overwriting existing configs
-- **Merge**: Uses yq to merge Windows Terminal settings (doesn't overwrite everything)
-- **Atomic**: Safe file operations with proper error handling
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, and task if missing
+- **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
+- **Windows Terminal**: Merges settings using yq (WSL only)
+- **Helix Config**: Installs to `~/.config/helix/config.toml`
+- **Shell Configuration**: Adds fzf, GOPATH, and task completion to `.bashrc`
+- **Backups**: Creates timestamped backups before overwriting configs
+- **WSL Detection**: Skips Windows-specific operations on native Linux
 
 ## Requirements
 
@@ -50,9 +60,10 @@ You can run individual parts:
 
 ```
 .
+├── bootstrap.sh    # One-liner installer
 ├── setup.sh        # Main installation script
 ├── config.toml     # Helix editor configuration
 ├── settings.json   # Windows Terminal settings
-├── fonts/          # Custom fonts directory
+├── fonts/          # Custom fonts directory (9 ProggyClean variants)
 └── README.md       # This file
 ```
