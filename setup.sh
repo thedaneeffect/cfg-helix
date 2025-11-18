@@ -52,33 +52,9 @@ install_fonts() {
     local fonts_dir="./fonts"
     [[ -d "$fonts_dir" ]] || { echo "✗ Error: $fonts_dir not found"; return 1; }
 
-    local localappdata=$(get_localappdata)
-    local user_fonts="$localappdata/Microsoft/Windows/Fonts"
-
-    mkdir -p "$user_fonts" || { echo "✗ Failed to create fonts directory"; return 1; }
-
-    local count=0
-    shopt -s nullglob
-    for font in "$fonts_dir"/*.{ttf,otf,TTF,OTF}; do
-        if [[ -f "$font" ]]; then
-            if cp "$font" "$user_fonts/" 2>/dev/null; then
-                count=$((count + 1))
-            else
-                echo "  ✗ Failed to copy $(basename "$font")"
-            fi
-        fi
-    done
-    shopt -u nullglob
-
-    if [[ $count -gt 0 ]]; then
-        echo "→ Registering fonts with Windows..."
-        # Run PowerShell script to register fonts
-        powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ./install_fonts.ps1)" 2>/dev/null
-        echo "✓ Installed and registered $count fonts"
-    else
-        echo "✗ No fonts found"
-        return 1
-    fi
+    # Run PowerShell script to copy and register fonts
+    powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ./install_fonts.ps1)" 2>/dev/null
+    echo "✓ Installed fonts"
 }
 
 # Apply Windows Terminal settings

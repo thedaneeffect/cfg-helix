@@ -1,21 +1,33 @@
-# Install fonts for current user
-$fontsDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
-$fontFiles = Get-ChildItem -Path $fontsDir -Filter "ProggyClean*.ttf"
+# Install and register fonts for current user
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$sourceFontsDir = Join-Path $scriptDir "fonts"
+$destFontsDir = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+$regPath = "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+
+# Create destination directory if it doesn't exist
+if (-not (Test-Path $destFontsDir)) {
+    New-Item -ItemType Directory -Path $destFontsDir -Force | Out-Null
+}
+
+# Get all font files from source
+$fontFiles = Get-ChildItem -Path $sourceFontsDir -Filter "*.ttf"
+$installedCount = 0
 
 foreach ($font in $fontFiles) {
+    $destPath = Join-Path $destFontsDir $font.Name
     $fontName = $font.BaseName
-    # Register font in registry for current user
-    $regPath = "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
 
-    # Check if already registered
+    # Copy font file
+    Copy-Item -Path $font.FullName -Destination $destPath -Force
+
+    # Register font in registry
     $existing = Get-ItemProperty -Path $regPath -Name "$fontName (TrueType)" -ErrorAction SilentlyContinue
 
     if (-not $existing) {
-        New-ItemProperty -Path $regPath -Name "$fontName (TrueType)" -Value $font.FullName -PropertyType String -Force | Out-Null
-        Write-Host "Registered: $fontName"
-    } else {
-        Write-Host "Already registered: $fontName"
+        New-ItemProperty -Path $regPath -Name "$fontName (TrueType)" -Value $destPath -PropertyType String -Force | Out-Null
     }
+
+    $installedCount++
 }
 
-Write-Host "`nFonts registered. Please restart Windows Terminal."
+Write-Host "Installed $installedCount fonts"
