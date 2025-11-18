@@ -54,14 +54,21 @@ install_fonts() {
 
     local localappdata=$(get_localappdata)
     local user_fonts="$localappdata/Microsoft/Windows/Fonts"
-    mkdir -p "$user_fonts"
+
+    mkdir -p "$user_fonts" || { echo "✗ Failed to create fonts directory"; return 1; }
 
     local count=0
+    shopt -s nullglob
     for font in "$fonts_dir"/*.{ttf,otf,TTF,OTF}; do
-        [[ -f "$font" ]] || continue
-        cp "$font" "$user_fonts/"
-        ((count++))
+        if [[ -f "$font" ]]; then
+            if cp "$font" "$user_fonts/" 2>/dev/null; then
+                count=$((count + 1))
+            else
+                echo "  ✗ Failed to copy $(basename "$font")"
+            fi
+        fi
     done
+    shopt -u nullglob
 
     if [[ $count -gt 0 ]]; then
         echo "✓ Installed $count fonts"
