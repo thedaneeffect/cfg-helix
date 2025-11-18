@@ -99,7 +99,8 @@ apply_settings() {
     cp "$wt_settings" "$wt_settings.backup.$(date +%s)"
     yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \
       "$wt_settings" "$local_patch" > /tmp/merged.json
-    mv /tmp/merged.json "$wt_settings"
+    cat /tmp/merged.json > "$wt_settings"
+    rm /tmp/merged.json
     echo "✓ Applied Windows Terminal settings"
 }
 
