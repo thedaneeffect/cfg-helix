@@ -166,7 +166,7 @@ install_go_tools() {
     go install github.com/go-delve/delve/cmd/dlv@latest && echo "✓ Installed delve"
 
     # Install air (live reload)
-    go install github.com/cosmtrek/air@latest && echo "✓ Installed air"
+    go install github.com/air-verse/air@latest && echo "✓ Installed air"
 
     echo "✓ Installed Go tools"
 }
