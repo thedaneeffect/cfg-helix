@@ -159,6 +159,9 @@ install_go_tools() {
     # Install golangci-lint
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && echo "✓ Installed golangci-lint"
 
+    # Install golangci-lint-langserver
+    go install github.com/nametake/golangci-lint-langserver@latest && echo "✓ Installed golangci-lint-langserver"
+
     # Install delve (Go debugger)
     go install github.com/go-delve/delve/cmd/dlv@latest && echo "✓ Installed delve"
 
