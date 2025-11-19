@@ -22,6 +22,25 @@ This system has modern CLI tools installed. Prefer these in your suggestions and
 - **jq**: JSON processor for parsing and filtering JSON
   - Example: `curl api.com/data | jq '.items[]'`
 
+- **sd**: Modern sed replacement for find-and-replace
+  - Example: `sd 'old' 'new' file.txt`
+  - Simpler syntax than sed, useful for refactoring
+
+- **glow**: Render markdown beautifully in terminal
+  - Example: `glow README.md`
+
+- **tokei**: Code statistics and line counting
+  - Example: `tokei` to see lines of code by language
+
+- **gh**: GitHub CLI for repo management
+  - Example: `gh pr list`, `gh issue create`
+
+- **procs**: Modern ps replacement for process listing
+  - Example: `procs` or `procs name`
+
+- **dust**: Modern du replacement for disk usage
+  - Example: `dust` to see disk usage as tree
+
 - **tldr**: Simplified man pages with examples
   - Example: `tldr tar` for practical examples instead of full man page
 
@@ -41,7 +60,13 @@ This system has modern CLI tools installed. Prefer these in your suggestions and
 - Prefer fd over find for file searching
 - Prefer bat over cat when viewing file contents
 - Prefer eza over ls for directory listings
+- Prefer sd over sed for find-and-replace operations
+- Prefer procs over ps for process listing
+- Prefer dust over du for disk usage
 - Use jq for JSON processing and filtering
+- Use glow for rendering markdown files
+- Use tokei for code statistics
+- Use gh for GitHub operations
 - Use tldr for quick command examples instead of man pages
 - Use task for running project tasks when Taskfile exists
 - Git shortcuts are available and preferred
