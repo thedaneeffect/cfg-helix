@@ -16,8 +16,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task)
-    local cmds=(yq hx go fzf task)
+    local deps=(yq helix go fzf go-task zoxide)
+    local cmds=(yq hx go fzf task zoxide)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
@@ -109,6 +109,19 @@ configure_fzf() {
     fi
 }
 
+# Configure zoxide in bashrc
+configure_zoxide() {
+    local bashrc="$HOME/.bashrc"
+    touch "$bashrc"
+
+    if ! grep -qF 'zoxide init bash' "$bashrc"; then
+        echo -e '\n# Initialize zoxide (smart cd)\neval "$(zoxide init bash)"' >> "$bashrc"
+        echo "✓ Configured zoxide"
+    else
+        echo "✓ zoxide (already configured)"
+    fi
+}
+
 # Configure GOPATH in bashrc
 configure_gopath() {
     local bashrc="$HOME/.bashrc"
@@ -178,6 +191,9 @@ main() {
         fzf)
             configure_fzf
             ;;
+        zoxide)
+            configure_zoxide
+            ;;
         go)
             configure_gopath
             ;;
@@ -193,17 +209,19 @@ main() {
             apply_settings
             install_helix_config
             configure_fzf
+            configure_zoxide
             configure_gopath
             configure_task
             install_claude_cli
             configure_local_bin_path
             ;;
         *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|go|task|claude|all]"
+            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|all]"
             echo "  fonts    - Install fonts only"
             echo "  settings - Apply Windows Terminal settings only"
             echo "  helix    - Install Helix config only"
             echo "  fzf      - Configure fzf in .bashrc only"
+            echo "  zoxide   - Configure zoxide in .bashrc only"
             echo "  go       - Configure GOPATH in .bashrc only"
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure PATH only"

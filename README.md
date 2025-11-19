@@ -36,6 +36,7 @@ Run specific parts only:
 ./setup.sh settings  # Apply Windows Terminal settings only
 ./setup.sh helix     # Install Helix config only
 ./setup.sh fzf       # Configure fzf only
+./setup.sh zoxide    # Configure zoxide only
 ./setup.sh go        # Configure GOPATH only
 ./setup.sh task      # Configure task completion only
 ./setup.sh claude    # Install Claude CLI and configure PATH only
@@ -44,14 +45,34 @@ Run specific parts only:
 
 ## What the Script Does
 
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, and task if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, and task if missing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
 - **Claude CLI**: Installs Claude AI assistant and adds `~/.local/bin` to PATH
-- **Shell Configuration**: Adds fzf, GOPATH, task completion, and `~/.local/bin` to `.bashrc`
+- **Shell Configuration**: Adds fzf, zoxide, GOPATH, task completion, and `~/.local/bin` to `.bashrc`
 - **Backups**: Creates timestamped backups before overwriting configs
 - **WSL Detection**: Skips Windows-specific operations on native Linux
+
+## Key Features
+
+### Zoxide - Smart Directory Navigation
+After installation, use these commands to navigate:
+- `z <partial-name>` - Jump to a directory matching the name (based on frecency)
+- `zi` - Interactive fuzzy finder (via fzf) to select from all your directories
+- Works across all terminal sessions - remembers your most-used paths
+
+Examples:
+```bash
+z proj          # Jump to ~/projects/env-wsl
+zi              # Open fzf to select from your directory history
+z doc down      # Jump to ~/Documents/Downloads
+```
+
+### fzf - Fuzzy Finding
+- **`Ctrl+R`** - Search command history
+- **`Ctrl+T`** - Fuzzy find files in current directory
+- **`Alt+C`** - Fuzzy find and cd into subdirectories
 
 ## Requirements
 
