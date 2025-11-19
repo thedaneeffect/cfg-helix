@@ -169,7 +169,7 @@ configure_local_bin_path() {
 
 # Configure PS1 prompt
 configure_ps1() {
-    add_to_bashrc '# Custom PS1 prompt' '# Custom PS1 prompt (green username, blue directory)\nexport PS1="\\[\\e[32m\\]\\u\\[\\e[0m\\]:\\[\\e[34m\\]\\W\\[\\e[0m\\]\\$ "' 'PS1 prompt'
+    add_to_bashrc '# Custom PS1 prompt' '# Custom PS1 prompt (bright green username, cyan directory)\nexport PS1="\\[\\e[92m\\]\\u\\[\\e[0m\\]:\\[\\e[96m\\]\\W\\[\\e[0m\\]\\$ "' 'PS1 prompt'
 }
 
 # Configure eza aliases
