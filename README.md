@@ -38,7 +38,7 @@ Run specific parts only:
 ./setup.sh fzf       # Configure fzf only
 ./setup.sh zoxide    # Configure zoxide only
 ./setup.sh direnv    # Configure direnv only
-./setup.sh go        # Configure GOPATH only
+./setup.sh go        # Configure GOPATH and install Go tools (gopls, golangci-lint)
 ./setup.sh task      # Configure task completion only
 ./setup.sh claude    # Install Claude CLI and configure PATH only
 ./setup.sh ps1       # Configure PS1 prompt only
@@ -56,6 +56,7 @@ Run specific parts only:
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
 - **Claude CLI**: Installs Claude AI assistant and adds `~/.local/bin` to PATH
 - **Git Configuration**: Sets user name, email, default branch, useful aliases (st, co, br, lg), and delta as pager
+- **Go Tools**: Installs gopls (language server) and golangci-lint via go install
 - **Shell Configuration**: Adds fzf, zoxide, direnv, GOPATH, task completion, PS1 prompt, eza aliases, bash history improvements, and useful aliases
 - **Backups**: Creates timestamped backups before overwriting configs
 - **WSL Detection**: Skips Windows-specific operations on native Linux

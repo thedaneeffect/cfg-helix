@@ -144,6 +144,24 @@ configure_gopath() {
     add_to_bashrc 'go env GOPATH' '# Add Go binaries to PATH\nexport PATH="$PATH:$(go env GOPATH)/bin"' 'GOPATH'
 }
 
+# Install Go tools
+install_go_tools() {
+    if ! command -v go >/dev/null 2>&1; then
+        echo "⊘ Skipping Go tools (Go not installed)"
+        return 0
+    fi
+
+    echo "→ Installing Go tools..."
+
+    # Install gopls (Go language server)
+    go install golang.org/x/tools/gopls@latest && echo "✓ Installed gopls"
+
+    # Install golangci-lint
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && echo "✓ Installed golangci-lint"
+
+    echo "✓ Installed Go tools"
+}
+
 # Configure task completion in bashrc
 configure_task() {
     add_to_bashrc 'task --completion bash' '# task completion\neval "$(task --completion bash)"' 'task completion'
@@ -300,6 +318,7 @@ main() {
             ;;
         go)
             configure_gopath
+            install_go_tools
             ;;
         task)
             configure_task
@@ -331,6 +350,7 @@ main() {
             configure_zoxide
             configure_direnv
             configure_gopath
+            install_go_tools
             configure_task
             install_claude_cli
             configure_claude_instructions
@@ -348,7 +368,7 @@ main() {
             echo "  fzf      - Configure fzf in .bashrc only"
             echo "  zoxide   - Configure zoxide in .bashrc only"
             echo "  direnv   - Configure direnv in .bashrc only"
-            echo "  go       - Configure GOPATH in .bashrc only"
+            echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint)"
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure instructions"
             echo "  ps1      - Configure PS1 prompt in .bashrc only"
