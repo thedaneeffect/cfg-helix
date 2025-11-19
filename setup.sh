@@ -1,6 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Helper: Add content to bashrc if not already present
+add_to_bashrc() {
+    local search_string="$1"
+    local content="$2"
+    local description="$3"
+    local bashrc="$HOME/.bashrc"
+
+    touch "$bashrc"
+    if ! grep -qF "$search_string" "$bashrc"; then
+        echo -e "\n$content" >> "$bashrc"
+        echo "✓ Configured $description"
+    else
+        echo "✓ $description (already configured)"
+    fi
+}
+
+# Helper: Create timestamped backup of a file
+backup_file() {
+    local file="$1"
+    [[ -f "$file" ]] && cp "$file" "$file.backup.$(date +%s)"
+}
+
 # Ensure dependencies are installed
 ensure_dependencies() {
     # Check for Homebrew
@@ -49,11 +74,11 @@ install_fonts() {
         return 0
     fi
 
-    local fonts_dir="./fonts"
+    local fonts_dir="$SCRIPT_DIR/fonts"
     [[ -d "$fonts_dir" ]] || { echo "✗ Error: $fonts_dir not found"; return 1; }
 
     # Run PowerShell script to copy and register fonts
-    powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ./install_fonts.ps1)" 2>/dev/null
+    powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPT_DIR/install_fonts.ps1")" 2>/dev/null
     echo "✓ Installed fonts"
 }
 
@@ -65,7 +90,7 @@ apply_settings() {
     fi
 
     local localappdata=$(get_localappdata)
-    local local_patch="./settings.json"
+    local local_patch="$SCRIPT_DIR/settings.json"
 
     [[ -f "$local_patch" ]] || { echo "✗ Error: $local_patch not found"; return 1; }
 
@@ -75,77 +100,48 @@ apply_settings() {
     local wt_settings="$wt_package/LocalState/settings.json"
     [[ -f "$wt_settings" ]] || { echo "✗ Error: settings.json not found"; return 1; }
 
-    cp "$wt_settings" "$wt_settings.backup.$(date +%s)"
+    backup_file "$wt_settings"
+
+    local temp_file=$(mktemp)
+    trap "rm -f '$temp_file'" EXIT
+
     yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \
-      "$wt_settings" "$local_patch" > /tmp/merged.json
-    cat /tmp/merged.json > "$wt_settings"
-    rm /tmp/merged.json
+      "$wt_settings" "$local_patch" > "$temp_file"
+    cat "$temp_file" > "$wt_settings"
     echo "✓ Applied Windows Terminal settings"
 }
 
 # Install Helix config
 install_helix_config() {
-    local config_source="./config.toml"
+    local config_source="$SCRIPT_DIR/config.toml"
     local config_dest="$HOME/.config/helix/config.toml"
 
     [[ -f "$config_source" ]] || { echo "✗ Error: $config_source not found"; return 1; }
 
     mkdir -p "$(dirname "$config_dest")"
-    [[ -f "$config_dest" ]] && cp "$config_dest" "$config_dest.backup.$(date +%s)"
+    backup_file "$config_dest"
     cp "$config_source" "$config_dest"
     echo "✓ Installed Helix config"
 }
 
 # Configure fzf in bashrc
 configure_fzf() {
-    local bashrc="$HOME/.bashrc"
-    touch "$bashrc"
-
-    if ! grep -qF 'fzf --bash' "$bashrc"; then
-        echo -e '\neval "$(fzf --bash)"' >> "$bashrc"
-        echo "✓ Configured fzf"
-    else
-        echo "✓ fzf (already configured)"
-    fi
+    add_to_bashrc 'fzf --bash' 'eval "$(fzf --bash)"' 'fzf'
 }
 
 # Configure zoxide in bashrc
 configure_zoxide() {
-    local bashrc="$HOME/.bashrc"
-    touch "$bashrc"
-
-    if ! grep -qF 'zoxide init bash' "$bashrc"; then
-        echo -e '\n# Initialize zoxide (smart cd)\neval "$(zoxide init bash)"' >> "$bashrc"
-        echo "✓ Configured zoxide"
-    else
-        echo "✓ zoxide (already configured)"
-    fi
+    add_to_bashrc 'zoxide init bash' '# Initialize zoxide (smart cd)\neval "$(zoxide init bash)"' 'zoxide'
 }
 
 # Configure GOPATH in bashrc
 configure_gopath() {
-    local bashrc="$HOME/.bashrc"
-    touch "$bashrc"
-
-    if ! grep -qF 'go env GOPATH' "$bashrc"; then
-        echo -e '\n# Add Go binaries to PATH\nexport PATH="$PATH:$(go env GOPATH)/bin"' >> "$bashrc"
-        echo "✓ Configured GOPATH"
-    else
-        echo "✓ GOPATH (already configured)"
-    fi
+    add_to_bashrc 'go env GOPATH' '# Add Go binaries to PATH\nexport PATH="$PATH:$(go env GOPATH)/bin"' 'GOPATH'
 }
 
 # Configure task completion in bashrc
 configure_task() {
-    local bashrc="$HOME/.bashrc"
-    touch "$bashrc"
-
-    if ! grep -qF 'task --completion bash' "$bashrc"; then
-        echo -e '\n# task completion\neval "$(task --completion bash)"' >> "$bashrc"
-        echo "✓ Configured task completion"
-    else
-        echo "✓ task completion (already configured)"
-    fi
+    add_to_bashrc 'task --completion bash' '# task completion\neval "$(task --completion bash)"' 'task completion'
 }
 
 # Install Claude CLI
@@ -168,15 +164,7 @@ install_claude_cli() {
 
 # Configure ~/.local/bin in PATH
 configure_local_bin_path() {
-    local bashrc="$HOME/.bashrc"
-    touch "$bashrc"
-
-    if ! grep -qF '.local/bin' "$bashrc"; then
-        echo -e '\n# Add ~/.local/bin to PATH\nexport PATH="$HOME/.local/bin:$PATH"' >> "$bashrc"
-        echo "✓ Configured ~/.local/bin in PATH"
-    else
-        echo "✓ ~/.local/bin (already configured)"
-    fi
+    add_to_bashrc '.local/bin' '# Add ~/.local/bin to PATH\nexport PATH="$HOME/.local/bin:$PATH"' '~/.local/bin in PATH'
 }
 
 # Main execution
