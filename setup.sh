@@ -135,6 +135,31 @@ configure_task() {
     fi
 }
 
+# Install Claude CLI
+install_claude_cli() {
+    if command -v claude >/dev/null 2>&1; then
+        echo "✓ Claude CLI (already installed)"
+        return 0
+    fi
+
+    echo "→ Installing Claude CLI..."
+    curl -fsSL https://claude.ai/install.sh | bash
+    echo "✓ Installed Claude CLI"
+}
+
+# Configure ~/.local/bin in PATH
+configure_local_bin_path() {
+    local bashrc="$HOME/.bashrc"
+    touch "$bashrc"
+
+    if ! grep -qF '.local/bin' "$bashrc"; then
+        echo -e '\n# Add ~/.local/bin to PATH\nexport PATH="$HOME/.local/bin:$PATH"' >> "$bashrc"
+        echo "✓ Configured ~/.local/bin in PATH"
+    else
+        echo "✓ ~/.local/bin (already configured)"
+    fi
+}
+
 # Main execution
 main() {
     # Ensure dependencies are installed first
@@ -159,6 +184,10 @@ main() {
         task)
             configure_task
             ;;
+        claude)
+            install_claude_cli
+            configure_local_bin_path
+            ;;
         all)
             install_fonts
             apply_settings
@@ -166,15 +195,18 @@ main() {
             configure_fzf
             configure_gopath
             configure_task
+            install_claude_cli
+            configure_local_bin_path
             ;;
         *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|go|task|all]"
+            echo "Usage: $0 [fonts|settings|helix|fzf|go|task|claude|all]"
             echo "  fonts    - Install fonts only"
             echo "  settings - Apply Windows Terminal settings only"
             echo "  helix    - Install Helix config only"
             echo "  fzf      - Configure fzf in .bashrc only"
             echo "  go       - Configure GOPATH in .bashrc only"
             echo "  task     - Configure task completion in .bashrc only"
+            echo "  claude   - Install Claude CLI and configure PATH only"
             echo "  all      - Do everything (default)"
             exit 1
             ;;

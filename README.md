@@ -23,6 +23,7 @@ cd env-wsl
 - **Helix Editor Config** (`config.toml`) - Custom Helix settings
 - **Windows Terminal Settings** (`settings.json`) - Terminal appearance and behavior
 - **Fonts** (`fonts/`) - Custom fonts for the terminal
+- **Claude CLI** - AI-powered command line assistant
 - **Setup Script** (`setup.sh`) - Automated installation script
 - **Bootstrap Script** (`bootstrap.sh`) - One-liner installer
 
@@ -37,6 +38,7 @@ Run specific parts only:
 ./setup.sh fzf       # Configure fzf only
 ./setup.sh go        # Configure GOPATH only
 ./setup.sh task      # Configure task completion only
+./setup.sh claude    # Install Claude CLI and configure PATH only
 ./setup.sh all       # Everything (default)
 ```
 
@@ -46,7 +48,8 @@ Run specific parts only:
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
-- **Shell Configuration**: Adds fzf, GOPATH, and task completion to `.bashrc`
+- **Claude CLI**: Installs Claude AI assistant and adds `~/.local/bin` to PATH
+- **Shell Configuration**: Adds fzf, GOPATH, task completion, and `~/.local/bin` to `.bashrc`
 - **Backups**: Creates timestamped backups before overwriting configs
 - **WSL Detection**: Skips Windows-specific operations on native Linux
 
