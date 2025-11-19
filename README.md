@@ -49,7 +49,7 @@ Run specific parts only:
 
 ## What the Script Does
 
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, task, ripgrep, bat, and eza if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, task, ripgrep, ast-grep, bat, and eza if missing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
@@ -81,6 +81,7 @@ z doc down      # Jump to ~/Documents/Downloads
 
 ### Modern CLI Tools
 - **ripgrep (rg)** - Blazing fast grep that respects .gitignore
+- **ast-grep** - Structural search and replace for code
 - **bat** - Cat with syntax highlighting and git integration
 - **eza** - Modern ls replacement with colors and git status
   - `ls` - List files

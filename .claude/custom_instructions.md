@@ -7,6 +7,9 @@ This system has modern CLI tools installed. Prefer these in your suggestions and
 - **ripgrep (rg)**: Use instead of grep - faster, respects .gitignore
   - Example: `rg "pattern" --type js`
 
+- **ast-grep**: Structural search and replace for code
+  - Example: `ast-grep --pattern 'console.log($$$)'`
+
 - **bat**: Use instead of cat for viewing files - includes syntax highlighting
   - Example: `bat file.txt`
 
@@ -23,7 +26,8 @@ This system has modern CLI tools installed. Prefer these in your suggestions and
 
 ## Guidelines
 
-- Prefer rg over grep for searching
+- Prefer rg over grep for text searching
+- Prefer ast-grep for structural code searching (e.g., finding function calls, patterns)
 - Prefer bat over cat when viewing file contents
 - Prefer eza over ls for directory listings
 - Use task for running project tasks when Taskfile exists

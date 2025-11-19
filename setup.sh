@@ -41,8 +41,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza)
-    local cmds=(yq hx go fzf task zoxide rg bat eza)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep)
+    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
