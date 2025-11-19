@@ -151,6 +151,7 @@ install_claude_cli() {
 
     if command -v claude >/dev/null 2>&1; then
         echo "✓ Claude CLI (already installed)"
+        configure_claude_custom_instructions
         return 0
     fi
 
@@ -160,6 +161,34 @@ install_claude_cli() {
     echo "→ Installing Claude CLI..."
     curl -fsSL https://claude.ai/install.sh | bash
     echo "✓ Installed Claude CLI"
+
+    configure_claude_custom_instructions
+}
+
+# Configure Claude CLI custom instructions
+configure_claude_custom_instructions() {
+    local claude_file="$HOME/.claude/CLAUDE.md"
+    local source_file="$SCRIPT_DIR/.claude/custom_instructions.md"
+
+    [[ -f "$source_file" ]] || { echo "✗ Error: $source_file not found"; return 1; }
+
+    mkdir -p "$HOME/.claude"
+    backup_file "$claude_file"
+
+    # Remove old section if exists
+    if [[ -f "$claude_file" ]] && grep -qF "<!-- env-wsl-start -->" "$claude_file"; then
+        sed -i '/<!-- env-wsl-start -->/,/<!-- env-wsl-end -->/d' "$claude_file"
+    fi
+
+    # Append our instructions with delimiters
+    cat >> "$claude_file" << EOF
+
+<!-- env-wsl-start -->
+$(cat "$source_file")
+<!-- env-wsl-end -->
+EOF
+
+    echo "✓ Configured Claude custom instructions"
 }
 
 # Configure ~/.local/bin in PATH
