@@ -167,6 +167,11 @@ configure_local_bin_path() {
     add_to_bashrc '.local/bin' '# Add ~/.local/bin to PATH\nexport PATH="$HOME/.local/bin:$PATH"' '~/.local/bin in PATH'
 }
 
+# Configure PS1 prompt
+configure_ps1() {
+    add_to_bashrc 'PS1=' '# Set simple colored prompt (green username, blue directory)\nexport PS1="\\[\\e[32m\\]\\u\\[\\e[0m\\]:\\[\\e[34m\\]\\W\\[\\e[0m\\]\\$ "' 'PS1 prompt'
+}
+
 # Main execution
 main() {
     # Ensure dependencies are installed first
@@ -197,6 +202,9 @@ main() {
         claude)
             install_claude_cli
             ;;
+        ps1)
+            configure_ps1
+            ;;
         all)
             install_fonts
             apply_settings
@@ -206,9 +214,10 @@ main() {
             configure_gopath
             configure_task
             install_claude_cli
+            configure_ps1
             ;;
         *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|all]"
+            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|ps1|all]"
             echo "  fonts    - Install fonts only"
             echo "  settings - Apply Windows Terminal settings only"
             echo "  helix    - Install Helix config only"
@@ -217,6 +226,7 @@ main() {
             echo "  go       - Configure GOPATH in .bashrc only"
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure PATH only"
+            echo "  ps1      - Configure PS1 prompt in .bashrc only"
             echo "  all      - Do everything (default)"
             exit 1
             ;;

@@ -40,6 +40,7 @@ Run specific parts only:
 ./setup.sh go        # Configure GOPATH only
 ./setup.sh task      # Configure task completion only
 ./setup.sh claude    # Install Claude CLI and configure PATH only
+./setup.sh ps1       # Configure PS1 prompt only
 ./setup.sh all       # Everything (default)
 ```
 
@@ -50,7 +51,7 @@ Run specific parts only:
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
 - **Claude CLI**: Installs Claude AI assistant and adds `~/.local/bin` to PATH
-- **Shell Configuration**: Adds fzf, zoxide, GOPATH, task completion, and `~/.local/bin` to `.bashrc`
+- **Shell Configuration**: Adds fzf, zoxide, GOPATH, task completion, PS1 prompt, and `~/.local/bin` to `.bashrc`
 - **Backups**: Creates timestamped backups before overwriting configs
 - **WSL Detection**: Skips Windows-specific operations on native Linux
 
