@@ -151,7 +151,6 @@ install_claude_cli() {
 
     if command -v claude >/dev/null 2>&1; then
         echo "✓ Claude CLI (already installed)"
-        configure_claude_custom_instructions
         return 0
     fi
 
@@ -161,12 +160,15 @@ install_claude_cli() {
     echo "→ Installing Claude CLI..."
     curl -fsSL https://claude.ai/install.sh | bash
     echo "✓ Installed Claude CLI"
-
-    configure_claude_custom_instructions
 }
 
 # Configure Claude CLI custom instructions
-configure_claude_custom_instructions() {
+configure_claude_instructions() {
+    if ! command -v claude >/dev/null 2>&1; then
+        echo "⊘ Skipping Claude instructions (Claude CLI not installed)"
+        return 0
+    fi
+
     local claude_file="$HOME/.claude/CLAUDE.md"
     local source_file="$SCRIPT_DIR/.claude/custom_instructions.md"
 
@@ -282,6 +284,7 @@ main() {
             ;;
         claude)
             install_claude_cli
+            configure_claude_instructions
             ;;
         ps1)
             configure_ps1
@@ -307,6 +310,7 @@ main() {
             configure_gopath
             configure_task
             install_claude_cli
+            configure_claude_instructions
             configure_ps1
             configure_eza_aliases
             configure_git
@@ -322,7 +326,7 @@ main() {
             echo "  zoxide   - Configure zoxide in .bashrc only"
             echo "  go       - Configure GOPATH in .bashrc only"
             echo "  task     - Configure task completion in .bashrc only"
-            echo "  claude   - Install Claude CLI and configure PATH only"
+            echo "  claude   - Install Claude CLI and configure instructions"
             echo "  ps1      - Configure PS1 prompt in .bashrc only"
             echo "  eza      - Configure eza aliases (ls, ll, la) only"
             echo "  git      - Configure git settings only"
