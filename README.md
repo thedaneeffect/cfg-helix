@@ -98,7 +98,7 @@ z doc down      # Jump to ~/Documents/Downloads
 - **gh** - GitHub CLI for managing repos, PRs, and issues
 - **procs** - Modern ps replacement for process viewing
 - **dust** - Modern du replacement showing disk usage as tree
-- **usql** - Universal SQL client (PostgreSQL, MySQL, SQLite, etc.)
+- **usql** - Universal SQL client (PostgreSQL and SQLite)
 - **direnv** - Auto-loads `.envrc` files per directory
 - **btop** - Beautiful system monitor with resource usage
 - **tldr** - Simplified man pages with practical examples

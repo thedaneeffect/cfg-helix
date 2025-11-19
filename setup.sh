@@ -168,8 +168,8 @@ install_go_tools() {
     # Install air (live reload)
     go install github.com/air-verse/air@latest && echo "✓ Installed air"
 
-    # Install usql (universal SQL client with most database drivers)
-    go install -tags most github.com/xo/usql@latest && echo "✓ Installed usql"
+    # Install usql (universal SQL client with PostgreSQL and SQLite support)
+    go install -tags 'postgres sqlite3' github.com/xo/usql@latest && echo "✓ Installed usql"
 
     echo "✓ Installed Go tools"
 }
