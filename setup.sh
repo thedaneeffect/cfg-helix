@@ -159,6 +159,9 @@ install_go_tools() {
     # Install golangci-lint
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && echo "✓ Installed golangci-lint"
 
+    # Install delve (Go debugger)
+    go install github.com/go-delve/delve/cmd/dlv@latest && echo "✓ Installed delve"
+
     echo "✓ Installed Go tools"
 }
 
@@ -368,7 +371,7 @@ main() {
             echo "  fzf      - Configure fzf in .bashrc only"
             echo "  zoxide   - Configure zoxide in .bashrc only"
             echo "  direnv   - Configure direnv in .bashrc only"
-            echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint)"
+            echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint, delve)"
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure instructions"
             echo "  ps1      - Configure PS1 prompt in .bashrc only"
