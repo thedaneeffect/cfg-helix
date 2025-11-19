@@ -41,8 +41,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust usql)
-    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust usql)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust)
+    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
@@ -167,6 +167,9 @@ install_go_tools() {
 
     # Install air (live reload)
     go install github.com/air-verse/air@latest && echo "✓ Installed air"
+
+    # Install usql (universal SQL client with most database drivers)
+    go install -tags most github.com/xo/usql@latest && echo "✓ Installed usql"
 
     echo "✓ Installed Go tools"
 }
@@ -377,7 +380,7 @@ main() {
             echo "  fzf      - Configure fzf in .bashrc only"
             echo "  zoxide   - Configure zoxide in .bashrc only"
             echo "  direnv   - Configure direnv in .bashrc only"
-            echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint, delve, air)"
+            echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint, delve, air, usql)"
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure instructions"
             echo "  ps1      - Configure PS1 prompt in .bashrc only"
