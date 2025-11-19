@@ -41,17 +41,21 @@ Run specific parts only:
 ./setup.sh task      # Configure task completion only
 ./setup.sh claude    # Install Claude CLI and configure PATH only
 ./setup.sh ps1       # Configure PS1 prompt only
+./setup.sh eza       # Configure eza aliases (ls, ll, la) only
+./setup.sh git       # Configure git settings only
+./setup.sh bash      # Configure bash quality of life improvements only
 ./setup.sh all       # Everything (default)
 ```
 
 ## What the Script Does
 
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, and task if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, task, ripgrep, bat, and eza if missing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
 - **Claude CLI**: Installs Claude AI assistant and adds `~/.local/bin` to PATH
-- **Shell Configuration**: Adds fzf, zoxide, GOPATH, task completion, PS1 prompt, and `~/.local/bin` to `.bashrc`
+- **Git Configuration**: Sets user name, email, default branch, and useful aliases (st, co, br, lg)
+- **Shell Configuration**: Adds fzf, zoxide, GOPATH, task completion, PS1 prompt, eza aliases, bash history improvements, and useful aliases
 - **Backups**: Creates timestamped backups before overwriting configs
 - **WSL Detection**: Skips Windows-specific operations on native Linux
 
@@ -74,6 +78,26 @@ z doc down      # Jump to ~/Documents/Downloads
 - **`Ctrl+R`** - Search command history
 - **`Ctrl+T`** - Fuzzy find files in current directory
 - **`Alt+C`** - Fuzzy find and cd into subdirectories
+
+### Modern CLI Tools
+- **ripgrep (rg)** - Blazing fast grep that respects .gitignore
+- **bat** - Cat with syntax highlighting and git integration
+- **eza** - Modern ls replacement with colors and git status
+  - `ls` - List files
+  - `ll` - List with details
+  - `la` - List all including hidden files
+
+### Git Configuration
+Pre-configured with:
+- User: Dane <dane@medieval.software>
+- Default branch: main
+- Pull strategy: merge (not rebase)
+- Aliases: `git st`, `git co`, `git br`, `git lg`
+
+### Bash Improvements
+- Extended history (10000 commands)
+- No duplicate entries
+- Useful aliases: `..`, `...`, colored grep
 
 ## Requirements
 

@@ -41,8 +41,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide)
-    local cmds=(yq hx go fzf task zoxide)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza)
+    local cmds=(yq hx go fzf task zoxide rg bat eza)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
@@ -172,6 +172,53 @@ configure_ps1() {
     add_to_bashrc 'PS1=' '# Set simple colored prompt (green username, blue directory)\nexport PS1="\\[\\e[32m\\]\\u\\[\\e[0m\\]:\\[\\e[34m\\]\\W\\[\\e[0m\\]\\$ "' 'PS1 prompt'
 }
 
+# Configure eza aliases
+configure_eza_aliases() {
+    add_to_bashrc "alias ls='eza'" "# eza aliases (modern ls replacement)\nalias ls='eza'\nalias ll='eza -l'\nalias la='eza -la'" 'eza aliases'
+}
+
+# Configure git
+configure_git() {
+    echo "→ Configuring git..."
+    git config --global user.name "Dane"
+    git config --global user.email "dane@medieval.software"
+    git config --global init.defaultBranch main
+    git config --global pull.rebase false
+
+    # Git aliases
+    git config --global alias.st status
+    git config --global alias.co checkout
+    git config --global alias.br branch
+    git config --global alias.lg "log --graph --oneline --decorate"
+
+    echo "✓ Configured git"
+}
+
+# Configure bash quality of life improvements
+configure_bash_qol() {
+    local bashrc="$HOME/.bashrc"
+    touch "$bashrc"
+
+    if ! grep -qF 'HISTSIZE=10000' "$bashrc"; then
+        cat >> "$bashrc" << 'EOF'
+
+# Bash history improvements
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoredups:erasedups
+shopt -s histappend
+
+# Useful aliases
+alias ..='cd ..'
+alias ...='cd ../..'
+alias grep='grep --color=auto'
+EOF
+        echo "✓ Configured bash quality of life"
+    else
+        echo "✓ bash quality of life (already configured)"
+    fi
+}
+
 # Main execution
 main() {
     # Ensure dependencies are installed first
@@ -205,6 +252,15 @@ main() {
         ps1)
             configure_ps1
             ;;
+        eza)
+            configure_eza_aliases
+            ;;
+        git)
+            configure_git
+            ;;
+        bash)
+            configure_bash_qol
+            ;;
         all)
             install_fonts
             apply_settings
@@ -215,9 +271,12 @@ main() {
             configure_task
             install_claude_cli
             configure_ps1
+            configure_eza_aliases
+            configure_git
+            configure_bash_qol
             ;;
         *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|ps1|all]"
+            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|ps1|eza|git|bash|all]"
             echo "  fonts    - Install fonts only"
             echo "  settings - Apply Windows Terminal settings only"
             echo "  helix    - Install Helix config only"
@@ -227,6 +286,9 @@ main() {
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure PATH only"
             echo "  ps1      - Configure PS1 prompt in .bashrc only"
+            echo "  eza      - Configure eza aliases (ls, ll, la) only"
+            echo "  git      - Configure git settings only"
+            echo "  bash     - Configure bash quality of life improvements only"
             echo "  all      - Do everything (default)"
             exit 1
             ;;
