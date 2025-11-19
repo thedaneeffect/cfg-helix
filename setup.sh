@@ -175,10 +175,16 @@ configure_claude_instructions() {
     [[ -f "$source_file" ]] || { echo "✗ Error: $source_file not found"; return 1; }
 
     mkdir -p "$HOME/.claude"
-    backup_file "$claude_file"
+
+    # Create CLAUDE.md if it doesn't exist
+    if [[ ! -f "$claude_file" ]]; then
+        touch "$claude_file"
+    else
+        backup_file "$claude_file"
+    fi
 
     # Remove old section if exists
-    if [[ -f "$claude_file" ]] && grep -qF "<!-- env-wsl-start -->" "$claude_file"; then
+    if grep -qF "<!-- env-wsl-start -->" "$claude_file"; then
         sed -i '/<!-- env-wsl-start -->/,/<!-- env-wsl-end -->/d' "$claude_file"
     fi
 
