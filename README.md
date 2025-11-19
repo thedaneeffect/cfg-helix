@@ -37,6 +37,7 @@ Run specific parts only:
 ./setup.sh helix     # Install Helix config only
 ./setup.sh fzf       # Configure fzf only
 ./setup.sh zoxide    # Configure zoxide only
+./setup.sh direnv    # Configure direnv only
 ./setup.sh go        # Configure GOPATH only
 ./setup.sh task      # Configure task completion only
 ./setup.sh claude    # Install Claude CLI and configure PATH only
@@ -49,13 +50,13 @@ Run specific parts only:
 
 ## What the Script Does
 
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, task, ripgrep, ast-grep, bat, and eza if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, and jq if missing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
 - **Claude CLI**: Installs Claude AI assistant and adds `~/.local/bin` to PATH
-- **Git Configuration**: Sets user name, email, default branch, and useful aliases (st, co, br, lg)
-- **Shell Configuration**: Adds fzf, zoxide, GOPATH, task completion, PS1 prompt, eza aliases, bash history improvements, and useful aliases
+- **Git Configuration**: Sets user name, email, default branch, useful aliases (st, co, br, lg), and delta as pager
+- **Shell Configuration**: Adds fzf, zoxide, direnv, GOPATH, task completion, PS1 prompt, eza aliases, bash history improvements, and useful aliases
 - **Backups**: Creates timestamped backups before overwriting configs
 - **WSL Detection**: Skips Windows-specific operations on native Linux
 
@@ -82,17 +83,22 @@ z doc down      # Jump to ~/Documents/Downloads
 ### Modern CLI Tools
 - **ripgrep (rg)** - Blazing fast grep that respects .gitignore
 - **ast-grep** - Structural search and replace for code
+- **fd** - Modern find alternative with simpler syntax
 - **bat** - Cat with syntax highlighting and git integration
 - **eza** - Modern ls replacement with colors and git status
   - `ls` - List files
   - `ll` - List with details
   - `la` - List all including hidden files
+- **delta** - Beautiful git diffs with syntax highlighting
+- **jq** - JSON processor for parsing and filtering
+- **direnv** - Auto-loads `.envrc` files per directory
 
 ### Git Configuration
 Pre-configured with:
 - User: Dane <dane@medieval.software>
 - Default branch: main
 - Pull strategy: merge (not rebase)
+- Delta pager for beautiful diffs
 - Aliases: `git st`, `git co`, `git br`, `git lg`
 
 ### Bash Improvements

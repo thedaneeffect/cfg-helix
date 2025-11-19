@@ -41,8 +41,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep)
-    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq)
+    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
@@ -132,6 +132,11 @@ configure_fzf() {
 # Configure zoxide in bashrc
 configure_zoxide() {
     add_to_bashrc 'zoxide init bash' '# Initialize zoxide (smart cd)\neval "$(zoxide init bash)"' 'zoxide'
+}
+
+# Configure direnv in bashrc
+configure_direnv() {
+    add_to_bashrc 'direnv hook bash' '# Initialize direnv (auto-load .envrc)\neval "$(direnv hook bash)"' 'direnv'
 }
 
 # Configure GOPATH in bashrc
@@ -228,6 +233,14 @@ configure_git() {
     git config --global alias.br branch
     git config --global alias.lg "log --graph --oneline --decorate"
 
+    # Configure delta as pager if available
+    if command -v delta >/dev/null 2>&1; then
+        git config --global core.pager delta
+        git config --global interactive.diffFilter "delta --color-only"
+        git config --global delta.navigate true
+        git config --global delta.light false
+    fi
+
     echo "✓ Configured git"
 }
 
@@ -282,6 +295,9 @@ main() {
         zoxide)
             configure_zoxide
             ;;
+        direnv)
+            configure_direnv
+            ;;
         go)
             configure_gopath
             ;;
@@ -313,6 +329,7 @@ main() {
             install_helix_config
             configure_fzf
             configure_zoxide
+            configure_direnv
             configure_gopath
             configure_task
             install_claude_cli
@@ -324,12 +341,13 @@ main() {
             configure_bootstrap_alias
             ;;
         *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|ps1|eza|git|bash|bootstrap|all]"
+            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|direnv|go|task|claude|ps1|eza|git|bash|bootstrap|all]"
             echo "  fonts    - Install fonts only"
             echo "  settings - Apply Windows Terminal settings only"
             echo "  helix    - Install Helix config only"
             echo "  fzf      - Configure fzf in .bashrc only"
             echo "  zoxide   - Configure zoxide in .bashrc only"
+            echo "  direnv   - Configure direnv in .bashrc only"
             echo "  go       - Configure GOPATH in .bashrc only"
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure instructions"
