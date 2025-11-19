@@ -212,6 +212,7 @@ shopt -s histappend
 alias ..='cd ..'
 alias ...='cd ../..'
 alias grep='grep --color=auto'
+alias bootstrap='bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/env-wsl/master/bootstrap.sh) && source ~/.bashrc'
 EOF
         echo "✓ Configured bash quality of life"
     else
@@ -295,7 +296,11 @@ main() {
     esac
 
     echo ""
-    echo "✓ Setup complete. Run 'source ~/.bashrc' to apply changes."
+    echo "✓ Setup complete!"
+    echo ""
+    echo "Run: source ~/.bashrc"
+    echo ""
+    echo "After sourcing, you can re-run setup anytime with: bootstrap"
 }
 
 main "$@"
