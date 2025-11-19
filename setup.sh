@@ -150,10 +150,16 @@ configure_task() {
 
 # Install Claude CLI
 install_claude_cli() {
+    # Ensure ~/.local/bin is in PATH before installing
+    configure_local_bin_path
+
     if command -v claude >/dev/null 2>&1; then
         echo "✓ Claude CLI (already installed)"
         return 0
     fi
+
+    # Add ~/.local/bin to current session PATH
+    export PATH="$HOME/.local/bin:$PATH"
 
     echo "→ Installing Claude CLI..."
     curl -fsSL https://claude.ai/install.sh | bash
@@ -202,7 +208,6 @@ main() {
             ;;
         claude)
             install_claude_cli
-            configure_local_bin_path
             ;;
         all)
             install_fonts
@@ -213,7 +218,6 @@ main() {
             configure_gopath
             configure_task
             install_claude_cli
-            configure_local_bin_path
             ;;
         *)
             echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|all]"
