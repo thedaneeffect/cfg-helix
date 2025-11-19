@@ -41,8 +41,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq)
-    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc)
+    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then

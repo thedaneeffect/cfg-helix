@@ -50,7 +50,7 @@ Run specific parts only:
 
 ## What the Script Does
 
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, and jq if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, and tldr if missing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
@@ -92,6 +92,8 @@ z doc down      # Jump to ~/Documents/Downloads
 - **delta** - Beautiful git diffs with syntax highlighting
 - **jq** - JSON processor for parsing and filtering
 - **direnv** - Auto-loads `.envrc` files per directory
+- **btop** - Beautiful system monitor with resource usage
+- **tldr** - Simplified man pages with practical examples
 
 ### Git Configuration
 Pre-configured with:

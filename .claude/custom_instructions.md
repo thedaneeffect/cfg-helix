@@ -22,6 +22,9 @@ This system has modern CLI tools installed. Prefer these in your suggestions and
 - **jq**: JSON processor for parsing and filtering JSON
   - Example: `curl api.com/data | jq '.items[]'`
 
+- **tldr**: Simplified man pages with examples
+  - Example: `tldr tar` for practical examples instead of full man page
+
 - **task**: Task runner available (Taskfile-based)
   - Use `task --list` to see available tasks
 
@@ -39,5 +42,6 @@ This system has modern CLI tools installed. Prefer these in your suggestions and
 - Prefer bat over cat when viewing file contents
 - Prefer eza over ls for directory listings
 - Use jq for JSON processing and filtering
+- Use tldr for quick command examples instead of man pages
 - Use task for running project tasks when Taskfile exists
 - Git shortcuts are available and preferred
