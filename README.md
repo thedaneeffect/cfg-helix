@@ -50,7 +50,7 @@ Run specific parts only:
 
 ## What the Script Does
 
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, tldr, sd, glow, tokei, gh, procs, and dust if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, tldr, sd, glow, tokei, gh, procs, dust, and usql if missing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
@@ -98,6 +98,7 @@ z doc down      # Jump to ~/Documents/Downloads
 - **gh** - GitHub CLI for managing repos, PRs, and issues
 - **procs** - Modern ps replacement for process viewing
 - **dust** - Modern du replacement showing disk usage as tree
+- **usql** - Universal SQL client (PostgreSQL, MySQL, SQLite, etc.)
 - **direnv** - Auto-loads `.envrc` files per directory
 - **btop** - Beautiful system monitor with resource usage
 - **tldr** - Simplified man pages with practical examples

@@ -35,6 +35,10 @@ This system has modern CLI tools installed. Use these when executing commands:
 - **dust**: Modern du replacement for disk usage
   - Example: `dust` to see disk usage as tree
 
+- **usql**: Universal SQL client for multiple databases
+  - Example: `usql postgres://user:pass@localhost/dbname`
+  - Supports PostgreSQL, MySQL, SQLite, SQL Server, Oracle, and more
+
 - **tldr**: Simplified man pages with examples
   - Example: `tldr tar` for practical examples instead of full man page
 
@@ -58,6 +62,7 @@ This system has modern CLI tools installed. Use these when executing commands:
 - Use jq for JSON processing and filtering
 - Use tokei for code statistics
 - Use gh for GitHub operations
+- Use usql for database queries across different database types
 - Use tldr for quick command examples instead of man pages
 - Use task for running project tasks when Taskfile exists
 - Git shortcuts are available and preferred
