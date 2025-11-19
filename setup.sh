@@ -41,8 +41,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server)
-    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server golangci-lint)
+    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server golangci-lint)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
@@ -144,6 +144,19 @@ configure_gopath() {
     add_to_bashrc 'go env GOPATH' '# Add Go binaries to PATH\nexport PATH="$PATH:$(go env GOPATH)/bin"' 'GOPATH'
 }
 
+# Helper: Install Go tool via go install
+go_install() {
+    local package="$1"
+    local name="$2"
+    local tags="${3:-}"
+
+    if [[ -n "$tags" ]]; then
+        go install -tags "$tags" "$package@latest" && echo "✓ Installed $name"
+    else
+        go install "$package@latest" && echo "✓ Installed $name"
+    fi
+}
+
 # Install Go tools
 install_go_tools() {
     if ! command -v go >/dev/null 2>&1; then
@@ -153,23 +166,12 @@ install_go_tools() {
 
     echo "→ Installing Go tools..."
 
-    # Install gopls (Go language server)
-    go install golang.org/x/tools/gopls@latest && echo "✓ Installed gopls"
-
-    # Install golangci-lint
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && echo "✓ Installed golangci-lint"
-
-    # Install golangci-lint-langserver
-    go install github.com/nametake/golangci-lint-langserver@latest && echo "✓ Installed golangci-lint-langserver"
-
-    # Install delve (Go debugger)
-    go install github.com/go-delve/delve/cmd/dlv@latest && echo "✓ Installed delve"
-
-    # Install air (live reload)
-    go install github.com/air-verse/air@latest && echo "✓ Installed air"
-
-    # Install usql (universal SQL client with PostgreSQL and SQLite support)
-    go install -tags 'postgres sqlite3' github.com/xo/usql@latest && echo "✓ Installed usql"
+    go_install "golang.org/x/tools/gopls" "gopls"
+    go_install "github.com/nametake/golangci-lint-langserver" "golangci-lint-langserver"
+    go_install "github.com/segmentio/golines" "golines"
+    go_install "github.com/go-delve/delve/cmd/dlv" "delve"
+    go_install "github.com/air-verse/air" "air"
+    go_install "github.com/xo/usql" "usql" "postgres sqlite3"
 
     echo "✓ Installed Go tools"
 }
@@ -380,7 +382,7 @@ main() {
             echo "  fzf      - Configure fzf in .bashrc only"
             echo "  zoxide   - Configure zoxide in .bashrc only"
             echo "  direnv   - Configure direnv in .bashrc only"
-            echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint, delve, air, usql)"
+            echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint-langserver, golines, delve, air, usql)"
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure instructions"
             echo "  ps1      - Configure PS1 prompt in .bashrc only"

@@ -38,7 +38,7 @@ Run specific parts only:
 ./setup.sh fzf       # Configure fzf only
 ./setup.sh zoxide    # Configure zoxide only
 ./setup.sh direnv    # Configure direnv only
-./setup.sh go        # Configure GOPATH and install Go tools (gopls, golangci-lint, delve, air, usql)
+./setup.sh go        # Configure GOPATH and install Go tools (gopls, golangci-lint-langserver, golines, delve, air, usql)
 ./setup.sh task      # Configure task completion only
 ./setup.sh claude    # Install Claude CLI and configure PATH only
 ./setup.sh ps1       # Configure PS1 prompt only
@@ -50,13 +50,13 @@ Run specific parts only:
 
 ## What the Script Does
 
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, tldr, sd, glow, tokei, gh, procs, dust, and typescript-language-server if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, tldr, sd, glow, tokei, gh, procs, dust, typescript-language-server, and golangci-lint if missing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
 - **Claude CLI**: Installs Claude AI assistant and adds `~/.local/bin` to PATH
 - **Git Configuration**: Sets user name, email, default branch, useful aliases (st, co, br, lg), and delta as pager
-- **Go Tools**: Installs gopls (language server), golangci-lint (linter), delve (debugger), air (live reload), and usql (universal SQL client) via go install
+- **Go Tools**: Installs gopls (language server), golangci-lint-langserver (linter langserver), golines (formatter for long lines), delve (debugger), air (live reload), and usql (universal SQL client) via go install
 - **TypeScript Support**: Installs typescript-language-server for JavaScript/TypeScript development in Helix
 - **Shell Configuration**: Adds fzf, zoxide, direnv, GOPATH, task completion, PS1 prompt, eza aliases, bash history improvements, and useful aliases
 - **Backups**: Creates timestamped backups before overwriting configs
