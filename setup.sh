@@ -212,12 +212,16 @@ shopt -s histappend
 alias ..='cd ..'
 alias ...='cd ../..'
 alias grep='grep --color=auto'
-alias bootstrap='bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/env-wsl/master/bootstrap.sh) && source ~/.bashrc'
 EOF
         echo "✓ Configured bash quality of life"
     else
         echo "✓ bash quality of life (already configured)"
     fi
+}
+
+# Configure bootstrap alias
+configure_bootstrap_alias() {
+    add_to_bashrc "alias bootstrap=" "# Bootstrap alias - re-run setup and reload bashrc\nalias bootstrap='bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/env-wsl/master/bootstrap.sh) && source ~/.bashrc'" 'bootstrap alias'
 }
 
 # Main execution
@@ -262,6 +266,9 @@ main() {
         bash)
             configure_bash_qol
             ;;
+        bootstrap)
+            configure_bootstrap_alias
+            ;;
         all)
             install_fonts
             apply_settings
@@ -275,9 +282,10 @@ main() {
             configure_eza_aliases
             configure_git
             configure_bash_qol
+            configure_bootstrap_alias
             ;;
         *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|ps1|eza|git|bash|all]"
+            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|go|task|claude|ps1|eza|git|bash|bootstrap|all]"
             echo "  fonts    - Install fonts only"
             echo "  settings - Apply Windows Terminal settings only"
             echo "  helix    - Install Helix config only"
@@ -290,6 +298,7 @@ main() {
             echo "  eza      - Configure eza aliases (ls, ll, la) only"
             echo "  git      - Configure git settings only"
             echo "  bash     - Configure bash quality of life improvements only"
+            echo "  bootstrap - Configure bootstrap alias only"
             echo "  all      - Do everything (default)"
             exit 1
             ;;
