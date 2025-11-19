@@ -41,8 +41,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server)
-    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv)
+    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
@@ -137,6 +137,11 @@ configure_zoxide() {
 # Configure direnv in bashrc
 configure_direnv() {
     add_to_bashrc 'direnv hook bash' '# Initialize direnv (auto-load .envrc)\neval "$(direnv hook bash)"' 'direnv'
+}
+
+# Configure goenv in bashrc
+configure_goenv() {
+    add_to_bashrc 'goenv init' '# Initialize goenv (Go version manager)\nexport GOENV_ROOT="$HOME/.goenv"\nexport PATH="$GOENV_ROOT/bin:$PATH"\neval "$(goenv init -)"' 'goenv'
 }
 
 # Configure GOPATH in bashrc
@@ -249,7 +254,7 @@ configure_ps1() {
 
 # Configure eza aliases
 configure_eza_aliases() {
-    add_to_bashrc "alias ls='eza'" "# eza aliases (modern ls replacement)\nalias ls='eza'\nalias ll='eza -l'\nalias la='eza -la'" 'eza aliases'
+    add_to_bashrc "alias ls='eza'" "# eza aliases (modern ls replacement)\nalias ls='eza'\nalias ll='eza -l'\nalias la='eza -la'\nalias tree='eza --tree'" 'eza aliases'
 }
 
 # Configure git
@@ -291,6 +296,9 @@ export HISTFILESIZE=20000
 export HISTCONTROL=ignoredups:erasedups
 shopt -s histappend
 
+# Default editor
+export EDITOR=hx
+
 # Useful aliases
 alias ..='cd ..'
 alias ...='cd ../..'
@@ -331,6 +339,9 @@ main() {
         direnv)
             configure_direnv
             ;;
+        goenv)
+            configure_goenv
+            ;;
         go)
             configure_gopath
             install_go_tools
@@ -364,6 +375,7 @@ main() {
             configure_fzf
             configure_zoxide
             configure_direnv
+            configure_goenv
             configure_gopath
             install_go_tools
             configure_task
@@ -376,13 +388,14 @@ main() {
             configure_bootstrap_alias
             ;;
         *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|direnv|go|task|claude|ps1|eza|git|bash|bootstrap|all]"
+            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|direnv|goenv|go|task|claude|ps1|eza|git|bash|bootstrap|all]"
             echo "  fonts    - Install fonts only"
             echo "  settings - Apply Windows Terminal settings only"
             echo "  helix    - Install Helix config only"
             echo "  fzf      - Configure fzf in .bashrc only"
             echo "  zoxide   - Configure zoxide in .bashrc only"
             echo "  direnv   - Configure direnv in .bashrc only"
+            echo "  goenv    - Configure goenv (Go version manager) in .bashrc only"
             echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint-langserver, golines, gofumpt, delve, air, usql)"
             echo "  task     - Configure task completion in .bashrc only"
             echo "  claude   - Install Claude CLI and configure instructions"

@@ -38,6 +38,7 @@ Run specific parts only:
 ./setup.sh fzf       # Configure fzf only
 ./setup.sh zoxide    # Configure zoxide only
 ./setup.sh direnv    # Configure direnv only
+./setup.sh goenv     # Configure goenv (Go version manager) only
 ./setup.sh go        # Configure GOPATH and install Go tools (gopls, golangci-lint-langserver, golines, gofumpt, delve, air, usql)
 ./setup.sh task      # Configure task completion only
 ./setup.sh claude    # Install Claude CLI and configure PATH only
@@ -50,7 +51,7 @@ Run specific parts only:
 
 ## What the Script Does
 
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, tldr, sd, glow, tokei, gh, procs, dust, typescript-language-server, golangci-lint, zig, zls, taplo, and yaml-language-server if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, tldr, sd, glow, tokei, gh, procs, dust, typescript-language-server, golangci-lint, zig, zls, taplo, yaml-language-server, and goenv if missing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
@@ -91,6 +92,7 @@ z doc down      # Jump to ~/Documents/Downloads
   - `ls` - List files
   - `ll` - List with details
   - `la` - List all including hidden files
+  - `tree` - Show directory tree
 - **delta** - Beautiful git diffs with syntax highlighting
 - **jq** - JSON processor for parsing and filtering
 - **sd** - Modern sed replacement with simpler syntax
@@ -101,6 +103,7 @@ z doc down      # Jump to ~/Documents/Downloads
 - **dust** - Modern du replacement showing disk usage as tree
 - **usql** - Universal SQL client (PostgreSQL and SQLite)
 - **direnv** - Auto-loads `.envrc` files per directory
+- **goenv** - Go version manager for managing multiple Go installations
 - **btop** - Beautiful system monitor with resource usage
 - **tldr** - Simplified man pages with practical examples
 
@@ -115,6 +118,7 @@ Pre-configured with:
 ### Bash Improvements
 - Extended history (10000 commands)
 - No duplicate entries
+- Default editor set to Helix (`EDITOR=hx`)
 - Useful aliases: `..`, `...`, colored grep
 
 ## Requirements
