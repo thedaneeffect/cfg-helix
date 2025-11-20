@@ -98,7 +98,7 @@ ensure_dependencies() {
     fi
 
     # Install dependencies (brew skips already installed packages)
-    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted docker-langserver)
+    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted)
 
     brew install -q "${deps[@]}"
     brew install -q go-task/tap/go-task
@@ -209,6 +209,7 @@ install_go_tools() {
     go_install "github.com/go-delve/delve/cmd/dlv" "delve"
     go_install "github.com/air-verse/air" "air"
     go_install "github.com/xo/usql" "usql" "postgres sqlite3"
+    go_install "github.com/docker/docker-language-server/cmd/docker-language-server" "docker-language-server"
 
     echo "✓ Installed Go tools"
 }
