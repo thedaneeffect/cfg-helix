@@ -10,14 +10,20 @@ This dotfiles setup includes a custom `secrets` CLI tool for managing sensitive 
 
 ```bash
 # 1. Add your sensitive files to the registry
-secrets add ~/.ssh/id_rsa
-secrets add ~/.ssh/id_rsa.pub
-secrets add ~/.ssh/config
-secrets add ~/.env
-secrets add ~/.aws/credentials
+# Add entire directories (files are added individually)
+secrets add ~/.ssh ~/.aws
+
+# Or add specific files
+secrets add ~/.env ~/.gitconfig.local
 
 # 2. View what's tracked
 secrets list
+# Output shows individual files:
+#   ✓ .ssh/id_rsa
+#   ✓ .ssh/id_rsa.pub
+#   ✓ .ssh/config
+#   ✓ .env
+#   ✓ .aws/credentials
 
 # 3. Push secrets (will prompt for Bitwarden login/password)
 secrets push
@@ -50,18 +56,32 @@ secrets pull
 ## Commands
 
 ### `secrets add <path>`
-Add a file or directory to the secrets registry.
+Add files or directories to the secrets registry.
+
+**Important:** When adding a directory, all files in it are added individually (not the directory itself).
 
 ```bash
+# Add a single file
 secrets add ~/.ssh/id_rsa
 secrets add ~/.gitconfig.local
-secrets add ~/.aws/credentials
+
+# Add a directory (expands to all files inside)
+secrets add ~/.ssh
+# Expands to:
+#   ~/.ssh/id_rsa
+#   ~/.ssh/id_rsa.pub
+#   ~/.ssh/config
+#   ~/.ssh/known_hosts
+
+# Add multiple at once
+secrets add ~/.env ~/.aws/credentials ~/.ssh
 ```
 
 Paths can be:
 - Absolute: `/Users/dane/.ssh/id_rsa`
 - Relative to home: `~/.ssh/id_rsa`
 - Relative to current dir: `.ssh/id_rsa`
+- Directories: `~/.ssh` (all files added individually)
 
 ### `secrets remove <path>`
 Remove a file from the registry.
