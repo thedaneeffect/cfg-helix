@@ -144,7 +144,7 @@ install_fonts() {
 
     if is_wsl; then
         # WSL: Use PowerShell script to install fonts in Windows
-        powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPT_DIR/install_fonts.ps1")" 2>/dev/null
+        powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPT_DIR/scripts/install_fonts.ps1")" 2>/dev/null
         echo "✓ Installed fonts (WSL)"
     elif is_macos; then
         # macOS: Copy fonts to user fonts directory
@@ -178,7 +178,7 @@ apply_settings() {
     fi
 
     local localappdata=$(get_localappdata)
-    local local_patch="$SCRIPT_DIR/settings.json"
+    local local_patch="$SCRIPT_DIR/configs/windows-terminal.json"
 
     [[ -f "$local_patch" ]] || { echo "✗ Error: $local_patch not found"; return 1; }
 
@@ -206,7 +206,7 @@ restore_iterm_settings() {
         return 0
     fi
 
-    local iterm_plist="$SCRIPT_DIR/com.googlecode.iterm2.plist"
+    local iterm_plist="$SCRIPT_DIR/configs/com.googlecode.iterm2.plist"
 
     if [[ ! -f "$iterm_plist" ]]; then
         echo "⊘ Skipping iTerm2 (settings file not found)"
@@ -227,7 +227,7 @@ restore_iterm_settings() {
 
 # Install Helix config
 install_helix_config() {
-    local config_source="$SCRIPT_DIR/config.toml"
+    local config_source="$SCRIPT_DIR/configs/helix.toml"
     local config_dest="$HOME/.config/helix/config.toml"
 
     [[ -f "$config_source" ]] || { echo "✗ Error: $config_source not found"; return 1; }
@@ -240,7 +240,7 @@ install_helix_config() {
 
 # Install Zellij config
 install_zellij_config() {
-    local config_source="$SCRIPT_DIR/zellij-config.kdl"
+    local config_source="$SCRIPT_DIR/configs/zellij.kdl"
     local config_dest="$HOME/.config/zellij/config.kdl"
 
     [[ -f "$config_source" ]] || { echo "✗ Error: $config_source not found"; return 1; }

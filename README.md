@@ -109,10 +109,10 @@ Automatically restores iTerm2 preferences on macOS.
 ### Backup Current Settings
 
 ```bash
-./backup-iterm.sh
+./scripts/backup-iterm.sh
 ```
 
-This exports your current iTerm2 preferences to `com.googlecode.iterm2.plist`.
+This exports your current iTerm2 preferences to `configs/com.googlecode.iterm2.plist`.
 
 ### Restore on New Machine
 
@@ -130,7 +130,7 @@ Fonts are automatically installed from the `fonts/` directory on both macOS and 
 ### Backup Fonts (macOS)
 
 ```bash
-./backup-fonts.sh
+./scripts/backup-fonts.sh
 ```
 
 This exports all Input fonts from `~/Library/Fonts` to the `fonts/` directory.
@@ -235,21 +235,25 @@ This updates all snippets and reloads your shell configuration.
 .
 ├── bootstrap.sh                    # One-liner installer
 ├── setup.sh                        # Main installation script
-├── backup-iterm.sh                 # Backup iTerm2 settings (macOS)
-├── backup-fonts.sh                 # Backup fonts (macOS)
 ├── secrets                         # Secrets management CLI
-├── config.toml                     # Helix editor configuration
-├── zellij-config.kdl               # Zellij configuration
-├── com.googlecode.iterm2.plist     # iTerm2 settings (created by backup-iterm.sh)
+├── configs/                        # Configuration files
+│   ├── com.googlecode.iterm2.plist # iTerm2 settings (macOS)
+│   ├── helix.toml                  # Helix editor configuration
+│   ├── zellij.kdl                  # Zellij terminal multiplexer configuration
+│   └── windows-terminal.json       # Windows Terminal settings (WSL)
 ├── fonts/                          # Font files (auto-installed)
 │   └── *.ttf                       # TrueType fonts
-├── worker/                         # Cloudflare Worker
-│   ├── index.js
-│   ├── wrangler.toml
-│   └── README.md
-└── snippets/                       # Shell configurations
-    ├── fzf.sh
-    ├── zoxide.sh
-    ├── git_aliases.sh
-    └── ...
+├── scripts/                        # Helper scripts
+│   ├── backup-fonts.sh             # Backup fonts (macOS)
+│   ├── backup-iterm.sh             # Backup iTerm2 settings (macOS)
+│   └── install_fonts.ps1           # Font installer for Windows (WSL)
+├── snippets/                       # Shell configurations
+│   ├── fzf.sh
+│   ├── zoxide.sh
+│   ├── git_aliases.sh
+│   └── ...
+└── worker/                         # Cloudflare Worker
+    ├── index.js
+    ├── wrangler.toml
+    └── README.md
 ```

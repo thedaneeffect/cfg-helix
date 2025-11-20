@@ -19,7 +19,8 @@ if [[ ! -f "$ITERM_PREFS" ]]; then
 fi
 
 # Backup the plist file
-BACKUP_FILE="$SCRIPT_DIR/com.googlecode.iterm2.plist"
+mkdir -p "$SCRIPT_DIR/configs"
+BACKUP_FILE="$SCRIPT_DIR/configs/com.googlecode.iterm2.plist"
 cp "$ITERM_PREFS" "$BACKUP_FILE"
 
 echo "✓ Backed up iTerm2 settings to: $BACKUP_FILE"
