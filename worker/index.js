@@ -21,8 +21,26 @@ export default {
     // Route: GET /list - List all available groups
     if (url.pathname === '/list' && request.method === 'GET') {
       const list = await env.SECRETS.list({ prefix: 'secrets:' });
-      const groups = list.keys.map(k => k.name.replace('secrets:', ''));
+      const groups = list.keys
+        .filter(k => !k.name.endsWith(':meta'))
+        .map(k => k.name.replace('secrets:', ''));
       return new Response(JSON.stringify(groups), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Route: GET /metadata/:group - Get metadata for a group
+    const metaMatch = url.pathname.match(/^\/metadata(?:\/([^\/]+))?$/);
+    if (metaMatch && request.method === 'GET') {
+      const group = metaMatch[1] || 'default';
+      const metaKey = `secrets:${group}:meta`;
+      const metadata = await env.SECRETS.get(metaKey);
+
+      if (!metadata) {
+        return new Response('Not found', { status: 404 });
+      }
+
+      return new Response(metadata, {
         headers: { 'Content-Type': 'application/json' }
       });
     }
@@ -35,6 +53,7 @@ export default {
 
     const group = pathMatch[1] || 'default';
     const key = `secrets:${group}`;
+    const metaKey = `secrets:${group}:meta`;
 
     // GET - Retrieve secrets for a group
     if (request.method === 'GET') {
@@ -50,6 +69,20 @@ export default {
     // POST - Store secrets for a group
     if (request.method === 'POST') {
       const data = await request.text();
+
+      // Extract metadata from request headers
+      const filesHeader = request.headers.get('X-Files');
+      const sizeHeader = request.headers.get('X-Size');
+
+      if (filesHeader && sizeHeader) {
+        const metadata = {
+          files: JSON.parse(filesHeader),
+          size: sizeHeader,
+          uploaded: new Date().toISOString()
+        };
+        await env.SECRETS.put(metaKey, JSON.stringify(metadata));
+      }
+
       await env.SECRETS.put(key, data);
       return new Response(`Stored: ${group}`, {
         headers: { 'Content-Type': 'text/plain' }
@@ -59,6 +92,7 @@ export default {
     // DELETE - Remove secrets for a group
     if (request.method === 'DELETE') {
       await env.SECRETS.delete(key);
+      await env.SECRETS.delete(metaKey);
       return new Response(`Deleted: ${group}`, {
         headers: { 'Content-Type': 'text/plain' }
       });
