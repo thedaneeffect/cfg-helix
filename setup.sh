@@ -311,6 +311,12 @@ setup_gpg_key() {
             echo "→ Importing GPG key..."
             if gpg --import "$HOME/.ssh/gpg" 2>/dev/null; then
                 echo "✓ Imported GPG key to keychain"
+
+                # Set ultimate trust for the imported key
+                echo "→ Setting key trust level..."
+                echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key 7B5FC82E53B5ABE6 trust quit 2>/dev/null && \
+                    echo "✓ Key trusted for signing" || \
+                    echo "⊘ Key trust may already be set"
             else
                 echo "⊘ GPG key may already be imported"
             fi
