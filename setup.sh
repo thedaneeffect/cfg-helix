@@ -100,7 +100,7 @@ ensure_dependencies() {
     # Install dependencies (brew skips already installed packages)
     local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship)
 
-    brew install "${deps[@]}"
+    brew install -q "${deps[@]}"
 }
 
 # Install bun
