@@ -141,6 +141,20 @@ Fonts are automatically installed when running `./setup.sh`:
 - **macOS**: Copied to `~/Library/Fonts`
 - **WSL**: Installed in Windows via PowerShell script
 
+## Zellij Configuration
+
+Custom Zellij configuration is automatically installed to `~/.config/zellij/config.kdl`.
+
+### Features
+
+- **Theme**: gruvbox-dark
+- **Default mode**: locked (requires Ctrl+g to unlock)
+- **Default layout**: compact
+- **Pane frames**: disabled
+- **Startup tips**: disabled
+
+The configuration includes custom keybindings and tmux-compatible shortcuts.
+
 ## Git Configuration
 
 | Setting | Value |
@@ -225,6 +239,7 @@ This updates all snippets and reloads your shell configuration.
 ├── backup-fonts.sh                 # Backup fonts (macOS)
 ├── secrets                         # Secrets management CLI
 ├── config.toml                     # Helix editor configuration
+├── zellij-config.kdl               # Zellij configuration
 ├── com.googlecode.iterm2.plist     # iTerm2 settings (created by backup-iterm.sh)
 ├── fonts/                          # Font files (auto-installed)
 │   └── *.ttf                       # TrueType fonts

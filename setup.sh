@@ -236,6 +236,19 @@ install_helix_config() {
     echo "✓ Installed Helix config"
 }
 
+# Install Zellij config
+install_zellij_config() {
+    local config_source="$SCRIPT_DIR/zellij-config.kdl"
+    local config_dest="$HOME/.config/zellij/config.kdl"
+
+    [[ -f "$config_source" ]] || { echo "✗ Error: $config_source not found"; return 1; }
+
+    mkdir -p "$(dirname "$config_dest")"
+    backup_file "$config_dest"
+    cp "$config_source" "$config_dest"
+    echo "✓ Installed Zellij config"
+}
+
 # Helper: Install Go tool via go install
 go_install() {
     local package="$1"
@@ -493,6 +506,7 @@ main() {
     apply_settings
     restore_iterm_settings
     install_helix_config
+    install_zellij_config
     configure_git
     configure_secrets
 
