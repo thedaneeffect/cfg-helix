@@ -1,13 +1,13 @@
 # Cross-Platform Development Environment Setup
 
-My development environment configuration for macOS and WSL, with automatic shell detection (bash/zsh).
+My development environment configuration for macOS and WSL, with automatic shell detection (bash/zsh), GPG commit signing, and secure secrets management via Cloudflare Workers.
 
 ## Quick Start
 
 **One-liner installation:**
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/dotfiles/master/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/dotfiles/main/bootstrap.sh)
 ```
 
 **Or clone and run manually:**
@@ -18,9 +18,15 @@ cd dotfiles
 ./setup.sh
 ```
 
+During setup, you'll be prompted to configure:
+- **Secrets storage** (optional): Worker URL and passphrase for encrypted secrets sync
+- Your credentials are stored locally and never committed to the repository
+
 ## What's Included
 
 - **Shell Configurations** (`snippets/`) - Modular, version-controlled shell configs
+- **Secrets Management** (`secrets`, `worker/`) - Encrypted secrets storage via Cloudflare Workers
+- **GPG Commit Signing** - Automatic commit signing with GPG key from secrets
 - **Helix Editor Config** (`config.toml`) - Custom Helix settings
 - **Windows Terminal Settings** (`settings.json`) - Terminal appearance and behavior (WSL only)
 - **Fonts** (`fonts/`) - Custom fonts for the terminal (WSL only)
@@ -32,13 +38,15 @@ cd dotfiles
 ## What the Script Does
 
 - **Shell Detection**: Automatically detects your default shell (bash or zsh) and configures appropriately
-- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, tldr, sd, glow, tokei, gh, procs, dust, typescript-language-server, golangci-lint, zig, zls, taplo, yaml-language-server, goenv, and starship if missing
+- **Dependency Management**: Installs Homebrew, yq, helix, go, fzf, zoxide, direnv, task, ripgrep, ast-grep, fd, bat, eza, delta, jq, btop, tldr, sd, glow, tokei, gh, procs, dust, typescript-language-server, golangci-lint, zig, zls, taplo, yaml-language-server, goenv, starship, gnupg, and more
+- **Secrets Management**: Installs `secrets` CLI for encrypted storage via Cloudflare Workers
+- **GPG Setup**: Pulls GPG key from secrets and configures commit signing
 - **Fonts**: Copies custom fonts to Windows fonts directory (WSL only)
 - **Windows Terminal**: Merges settings using yq (WSL only)
 - **Helix Config**: Installs to `~/.config/helix/config.toml`
 - **Starship Prompt**: Configures fast, cross-shell prompt with git integration
 - **Claude CLI**: Installs Claude AI assistant and adds `~/.local/bin` to PATH
-- **Git Configuration**: Sets user name, email, default branch, useful aliases (st, co, br, lg), and delta as pager
+- **Git Configuration**: Sets user name, email, default branch (main), GPG signing, useful aliases (st, co, br, lg), and delta as pager
 - **Go Tools**: Installs gopls (language server), golangci-lint-langserver (linter langserver), golines (formatter for long lines), gofumpt (stricter gofmt), delve (debugger), air (live reload), and usql (universal SQL client) via go install
 - **TypeScript Support**: Installs typescript-language-server for JavaScript/TypeScript development in Helix
 - **Snippet-Based Configs**: Modular shell configurations that update cleanly on re-run
@@ -93,14 +101,71 @@ z doc down      # Jump to ~/Documents/Downloads
 - **btop** - Beautiful system monitor with resource usage
 - **tldr** - Simplified man pages with practical examples
 
-### Git Configuration
+### Secrets Management
+
+Secure, encrypted storage for dotfiles secrets using Cloudflare Workers:
+
+```bash
+# Add files to track
+secrets add ~/.ssh/id_rsa ~/.env
+
+# Push to Cloudflare Worker
+secrets push
+
+# On a new machine, pull secrets
+secrets pull
+
+# List what's tracked locally and remotely
+secrets list
+
+# Organize with named groups
+secrets add ~/.ssh/github_key -g github
+secrets push github
+secrets pull github
+
+# See all available groups
+secrets groups
+
+# Delete a group
+secrets delete github
+```
+
+**Features:**
+- Base64-encoded tarballs stored in Cloudflare KV (free tier: 1GB storage)
+- Bearer token authentication via passphrase
+- Named groups for organizing secrets (work, personal, github, etc.)
+- Metadata caching for fast listings without downloads
+- Automatic macOS metadata exclusion (`._*` files)
+
+**Worker Deployment:**
+
+```bash
+# Install Wrangler CLI
+npm install -g wrangler
+
+# Deploy the worker
+cd worker
+wrangler login
+wrangler kv:namespace create SECRETS
+# Update wrangler.toml with the KV namespace ID
+wrangler secret put SECRET_PASSPHRASE
+wrangler deploy
+```
+
+Or deploy via Cloudflare Dashboard - connect this GitHub repo for automatic deployments.
+
+### Git Configuration & GPG Signing
+
 Pre-configured with:
-- User: Dane <dane@medieval.software>
+- User: dane <dane@medieval.software>
 - Default branch: main
 - Pull strategy: merge (not rebase)
+- **GPG commit signing** enabled (key auto-imported from secrets)
 - Delta pager for beautiful diffs
-- Git command aliases: `git st`, `git co`, `git br`, `git lg`
+- Git command aliases: `git st`, `git co`, `git br`, `git lg`, `git cm`, `git amend`
 - Shell aliases: `gst`, `gc`, `gl`, `gd`, `gds`, `ga` (no need to type `git`!)
+
+Your GPG key is automatically pulled from secrets and imported during setup.
 
 ### Shell Improvements
 - Extended history (10000 commands)
@@ -116,6 +181,7 @@ Pre-configured with:
 - **bash** or **zsh** shell
 - Internet connection (for dependency installation)
 - Windows Terminal (WSL only)
+- **Optional**: Cloudflare account for secrets storage
 
 ## File Structure
 
@@ -123,16 +189,24 @@ Pre-configured with:
 .
 ├── bootstrap.sh      # One-liner installer
 ├── setup.sh          # Main installation script
+├── secrets           # Secrets management CLI
 ├── CLAUDE.md         # Claude Code custom instructions
 ├── config.toml       # Helix editor configuration
 ├── settings.json     # Windows Terminal settings (WSL only)
-├── fonts/            # Custom fonts directory (9 ProggyClean variants, WSL only)
+├── fonts/            # Custom fonts directory (WSL only)
+├── worker/           # Cloudflare Worker for secrets storage
+│   ├── index.js      # Worker code
+│   ├── wrangler.toml # Worker configuration
+│   └── README.md     # Worker deployment guide
 ├── snippets/         # Modular shell configuration snippets
 │   ├── bash_qol.sh   # Bash-specific history config
 │   ├── bootstrap.sh  # Bootstrap alias
+│   ├── bun.sh        # Bun JavaScript runtime
+│   ├── dev.sh        # Development utilities (ports, myip)
 │   ├── direnv.sh     # direnv hook
 │   ├── eza_aliases.sh # Modern ls aliases
 │   ├── fzf.sh        # Fuzzy finder
+│   ├── fzf_git.sh    # Fuzzy git integration (gcob, glf)
 │   ├── git_aliases.sh # Git shortcuts (gst, gc, gl, etc.)
 │   ├── goenv.sh      # Go version manager
 │   ├── gopath.sh     # Go binary PATH
