@@ -102,7 +102,7 @@ ensure_dependencies() {
     fi
 
     # Install dependencies (brew skips already installed packages)
-    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij bitwarden-cli gnupg)
+    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij gnupg)
 
     brew install -q "${deps[@]}"
     brew install -q go-task/tap/go-task
@@ -298,14 +298,17 @@ setup_gpg_key() {
         return 0
     fi
 
-    if ! command -v bw >/dev/null 2>&1 || ! bw login --check &>/dev/null || [[ -z "${BW_SESSION:-}" ]]; then
-        echo "⊘ Skipping GPG key setup (Bitwarden not available or not unlocked)"
+    # Check if worker is configured
+    if [[ -z "${SECRETS_URL:-}" ]] || [[ -z "${SECRETS_PASSPHRASE:-}" ]]; then
+        echo "⊘ Skipping GPG key setup (SECRETS_URL or SECRETS_PASSPHRASE not set)"
+        echo "  Set: export SECRETS_URL=\"https://your-worker.workers.dev\""
+        echo "  Set: export SECRETS_PASSPHRASE=\"your-passphrase\""
         return 0
     fi
 
-    echo "→ Pulling secrets from Bitwarden..."
+    echo "→ Pulling secrets from worker..."
     if secrets pull 2>/dev/null; then
-        echo "✓ Pulled secrets from Bitwarden"
+        echo "✓ Pulled secrets from worker"
 
         if [[ -f "$HOME/.ssh/gpg" ]]; then
             echo "→ Importing GPG key..."
@@ -324,7 +327,7 @@ setup_gpg_key() {
             echo "⊘ GPG key file not found at ~/.ssh/gpg"
         fi
     else
-        echo "⊘ No secrets in Bitwarden yet (use: secrets push)"
+        echo "⊘ No secrets in worker yet (use: secrets push)"
     fi
 }
 

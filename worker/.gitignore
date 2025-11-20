@@ -1,0 +1,13 @@
+# Wrangler files
+.wrangler/
+wrangler.toml.local
+
+# Node modules if you install wrangler locally
+node_modules/
+
+# Environment variables (never commit secrets!)
+.env
+.dev.vars
+
+# macOS
+.DS_Store

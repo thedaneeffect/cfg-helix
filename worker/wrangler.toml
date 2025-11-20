@@ -1,0 +1,17 @@
+name = "secrets-storage"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace binding
+# After creating the namespace with `wrangler kv:namespace create SECRETS`,
+# update the id below with the output
+[[kv_namespaces]]
+binding = "SECRETS"
+id = "YOUR_KV_NAMESPACE_ID"
+
+# Environment variables
+# IMPORTANT: Set SECRET_PASSPHRASE via dashboard or wrangler secret
+# Do NOT commit your actual passphrase here
+[vars]
+# Placeholder - override with: wrangler secret put SECRET_PASSPHRASE
+SECRET_PASSPHRASE = "change-me-via-wrangler-secret"
