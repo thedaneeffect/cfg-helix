@@ -102,7 +102,7 @@ ensure_dependencies() {
     fi
 
     # Install dependencies (brew skips already installed packages)
-    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij)
+    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij bitwarden-cli)
 
     brew install -q "${deps[@]}"
     brew install -q go-task/tap/go-task
@@ -270,6 +270,32 @@ EOF
     echo "✓ Configured Claude custom instructions"
 }
 
+# Install secrets management CLI
+install_secrets_cli() {
+    local secrets_script="$SCRIPT_DIR/secrets"
+    local secrets_dest="$HOME/.local/bin/secrets"
+
+    if [[ ! -f "$secrets_script" ]]; then
+        echo "⊘ Skipping secrets CLI (script not found)"
+        return 0
+    fi
+
+    mkdir -p "$HOME/.local/bin"
+    cp "$secrets_script" "$secrets_dest"
+    chmod +x "$secrets_dest"
+    echo "✓ Installed secrets CLI"
+
+    # Try to pull secrets if Bitwarden is available and unlocked
+    if command -v bw >/dev/null 2>&1 && bw login --check &>/dev/null && [[ -n "${BW_SESSION:-}" ]]; then
+        echo "→ Pulling secrets from Bitwarden..."
+        if "$secrets_dest" pull 2>/dev/null; then
+            echo "✓ Pulled secrets from Bitwarden"
+        else
+            echo "⊘ No secrets in Bitwarden yet (use: secrets push)"
+        fi
+    fi
+}
+
 # Configure git
 configure_git() {
     echo "→ Configuring git..."
@@ -377,6 +403,7 @@ main() {
     install_go_tools
     install_claude_cli
     configure_claude_instructions
+    install_secrets_cli
 
     echo ""
     echo "✓ Setup complete!"
@@ -384,6 +411,8 @@ main() {
     echo "Run: source ~/.${SHELL_TYPE}rc"
     echo ""
     echo "After sourcing, you can re-run setup anytime with: bootstrap"
+    echo ""
+    echo "Manage secrets with: secrets add <file>, secrets push, secrets pull"
 }
 
 main
