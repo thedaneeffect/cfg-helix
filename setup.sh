@@ -462,11 +462,12 @@ main() {
     add_snippet "dev" "development utilities"
     add_snippet "xdg" "XDG directories"
     add_snippet "qol" "shell quality of life"
-    add_snippet "secrets" "secrets configuration"
 
-    # Delete secrets snippet file after it's been added (contains sensitive data)
+    # Add secrets snippet only if it was created
     local secrets_snippet="$SCRIPT_DIR/snippets/secrets.sh"
     if [[ -f "$secrets_snippet" ]]; then
+        add_snippet "secrets" "secrets configuration"
+        # Delete secrets snippet file after it's been added (contains sensitive data)
         rm -f "$secrets_snippet"
     fi
 
