@@ -23,12 +23,13 @@ Setup prompts for optional secrets storage configuration (Cloudflare Worker URL 
 | Component | Purpose |
 |-----------|---------|
 | **Helix** | Modern terminal editor |
+| **Zellij** | Terminal multiplexer |
 | **Starship** | Cross-shell prompt with git integration |
 | **Claude CLI** | AI assistant for command line |
 | **Secrets CLI** | AES-256 encrypted secrets sync via Cloudflare Workers |
-| **Modern Tools** | ripgrep, fd, bat, eza, delta, jq, sd, glow, tokei, gh, procs, dust |
-| **Development** | Go, goenv, air, bun, direnv, task |
-| **Language Servers** | gopls, typescript-language-server, zls, yaml-language-server |
+| **Modern Tools** | ripgrep, fd, bat, eza, delta, jq, sd, glow, tokei, gh, procs, dust, btop, tldr, grex, yq |
+| **Development** | Go, Zig, goenv, air, bun, direnv, task |
+| **Language Servers** | gopls, typescript-language-server, bash-language-server, zls, yaml-language-server, marksman, taplo |
 
 Automatically configures git, GPG signing, shell aliases, and syncs settings across machines.
 
@@ -37,6 +38,7 @@ Automatically configures git, GPG signing, shell aliases, and syncs settings acr
 | Tool | Replaces | Purpose |
 |------|----------|---------|
 | **ripgrep (rg)** | grep | Fast search, respects .gitignore |
+| **ast-grep** | - | Structural code search |
 | **fd** | find | Simple file finding |
 | **bat** | cat | Syntax highlighting |
 | **eza** | ls | Colors and git status |
@@ -44,8 +46,16 @@ Automatically configures git, GPG signing, shell aliases, and syncs settings acr
 | **sd** | sed | Simple find and replace |
 | **procs** | ps | Process viewer |
 | **dust** | du | Disk usage tree |
+| **btop** | top/htop | System monitor |
 | **zoxide** | cd | Smart directory jumping |
-| **fzf** | - | Fuzzy finder for everything |
+| **fzf** | - | Fuzzy finder |
+| **zellij** | tmux/screen | Terminal multiplexer |
+| **jq** | - | JSON processor |
+| **yq** | - | YAML processor |
+| **glow** | - | Markdown renderer |
+| **grex** | - | Regex generator from examples |
+| **tldr** | man | Simplified command examples |
+| **gh** | - | GitHub CLI |
 
 ## Secrets Management
 
