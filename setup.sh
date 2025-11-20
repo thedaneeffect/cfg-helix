@@ -286,6 +286,44 @@ install_secrets_cli() {
     echo "✓ Installed secrets CLI"
 }
 
+# Configure secrets (prompt for URL and passphrase)
+configure_secrets() {
+    # Skip if already configured via environment
+    if [[ -n "${SECRETS_URL:-}" ]] && [[ -n "${SECRETS_PASSPHRASE:-}" ]]; then
+        echo "⊘ Secrets already configured via environment"
+        return 0
+    fi
+
+    echo "→ Configuring secrets storage..."
+    echo ""
+    echo "Secrets are stored in Cloudflare Workers. You'll need:"
+    echo "  1. Your worker URL (e.g., https://secrets.your-subdomain.workers.dev)"
+    echo "  2. Your passphrase for authentication"
+    echo ""
+    read -p "Enter your secrets worker URL (or press Enter to skip): " url
+
+    if [[ -z "$url" ]]; then
+        echo "⊘ Skipping secrets configuration"
+        return 0
+    fi
+
+    read -p "Enter your secrets passphrase: " passphrase
+
+    if [[ -z "$passphrase" ]]; then
+        echo "⊘ Skipping secrets configuration (no passphrase provided)"
+        return 0
+    fi
+
+    # Create secrets snippet with actual values
+    local secrets_snippet="$SCRIPT_DIR/snippets/secrets.sh"
+    cat > "$secrets_snippet" << EOF
+export SECRETS_URL="$url"
+export SECRETS_PASSPHRASE="$passphrase"
+EOF
+
+    echo "✓ Configured secrets"
+}
+
 # Setup GPG key for commit signing
 setup_gpg_key() {
     if [[ "${SKIP_SECRETS_PULL:-}" == "true" ]]; then
@@ -301,8 +339,6 @@ setup_gpg_key() {
     # Check if worker is configured
     if [[ -z "${SECRETS_URL:-}" ]] || [[ -z "${SECRETS_PASSPHRASE:-}" ]]; then
         echo "⊘ Skipping GPG key setup (SECRETS_URL or SECRETS_PASSPHRASE not set)"
-        echo "  Set: export SECRETS_URL=\"https://your-worker.workers.dev\""
-        echo "  Set: export SECRETS_PASSPHRASE=\"your-passphrase\""
         return 0
     fi
 
@@ -401,6 +437,7 @@ main() {
     apply_settings
     install_helix_config
     configure_git
+    configure_secrets
 
     # Initialize snippet section
     init_snippets
@@ -421,6 +458,7 @@ main() {
     add_snippet "dev" "development utilities"
     add_snippet "xdg" "XDG directories"
     add_snippet "qol" "shell quality of life"
+    add_snippet "secrets" "secrets configuration"
 
     # Shell-specific snippets
     if [ "$SHELL_TYPE" = "zsh" ]; then
