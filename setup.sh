@@ -97,18 +97,10 @@ ensure_dependencies() {
         echo "✓ Installed Homebrew"
     fi
 
-    # Install missing dependencies
+    # Install dependencies (brew skips already installed packages)
     local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship bun)
-    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship bun)
 
-    for i in "${!deps[@]}"; do
-        if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
-            echo "→ Installing ${deps[$i]}..."
-            brew install "${deps[$i]}" && echo "✓ Installed ${deps[$i]}"
-        else
-            echo "✓ ${deps[$i]} (already installed)"
-        fi
-    done
+    brew install "${deps[@]}"
 }
 
 # Check if running in WSL
