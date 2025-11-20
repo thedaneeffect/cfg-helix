@@ -181,31 +181,6 @@ install_helix_config() {
     echo "✓ Installed Helix config"
 }
 
-# Configure fzf in shell rc
-configure_fzf() {
-    add_snippet "fzf" "fzf"
-}
-
-# Configure zoxide in shell rc
-configure_zoxide() {
-    add_snippet "zoxide" "zoxide"
-}
-
-# Configure direnv in shell rc
-configure_direnv() {
-    add_snippet "direnv" "direnv"
-}
-
-# Configure goenv in shell rc
-configure_goenv() {
-    add_snippet "goenv" "goenv"
-}
-
-# Configure GOPATH in shell rc
-configure_gopath() {
-    add_snippet "gopath" "GOPATH"
-}
-
 # Helper: Install Go tool via go install
 go_install() {
     local package="$1"
@@ -237,16 +212,6 @@ install_go_tools() {
     go_install "github.com/xo/usql" "usql" "postgres sqlite3"
 
     echo "✓ Installed Go tools"
-}
-
-# Configure task completion in shell rc
-configure_task() {
-    add_snippet "task" "task completion"
-}
-
-# Configure bun
-configure_bun() {
-    add_snippet "bun" "bun"
 }
 
 # Install Claude CLI
@@ -300,49 +265,6 @@ EOF
     echo "✓ Configured Claude custom instructions"
 }
 
-# Configure ~/.local/bin in PATH
-configure_local_bin_path() {
-    add_snippet "local_bin" "~/.local/bin in PATH"
-}
-
-# Configure Starship prompt
-configure_starship() {
-    add_snippet "starship" "Starship prompt"
-}
-
-# Configure eza aliases
-configure_eza_aliases() {
-    add_snippet "eza_aliases" "eza aliases"
-}
-
-# Configure git shell aliases
-configure_git_aliases() {
-    add_snippet "git_aliases" "git aliases"
-}
-
-# Configure macOS bindkeys for zsh
-configure_macos_bindkeys() {
-    if [[ "$(uname)" != "Darwin" ]] || [[ "$SHELL_TYPE" != "zsh" ]]; then
-        return 0
-    fi
-
-    add_snippet "macos_bindkeys" "macOS bindkeys"
-}
-
-# Configure XDG Base Directory specification
-configure_xdg() {
-    add_snippet "xdg" "XDG directories"
-}
-
-# Configure zsh-specific features
-configure_zsh() {
-    if [[ "$SHELL_TYPE" != "zsh" ]]; then
-        return 0
-    fi
-
-    add_snippet "zsh_dirstack" "zsh features"
-}
-
 # Configure git
 configure_git() {
     echo "→ Configuring git..."
@@ -368,22 +290,6 @@ configure_git() {
     echo "✓ Configured git"
 }
 
-# Configure shell quality of life improvements
-configure_bash_qol() {
-    add_snippet "qol" "shell quality of life"
-
-    if [ "$SHELL_TYPE" = "zsh" ]; then
-        add_snippet "zsh_qol" "zsh history config"
-    else
-        add_snippet "bash_qol" "bash history config"
-    fi
-}
-
-# Configure bootstrap alias
-configure_bootstrap_alias() {
-    add_snippet "bootstrap" "bootstrap alias"
-}
-
 # Main execution
 main() {
     # Ensure dependencies are installed first
@@ -398,22 +304,31 @@ main() {
     # Initialize snippet section
     init_snippets
 
-    configure_fzf
-    configure_zoxide
-    configure_direnv
-    configure_goenv
-    configure_gopath
-    configure_task
-    configure_bun
-    configure_local_bin_path
-    configure_starship
-    configure_eza_aliases
-    configure_git_aliases
-    configure_macos_bindkeys
-    configure_xdg
-    configure_zsh
-    configure_bash_qol
-    configure_bootstrap_alias
+    # Add all snippets
+    add_snippet "fzf" "fzf"
+    add_snippet "zoxide" "zoxide"
+    add_snippet "direnv" "direnv"
+    add_snippet "goenv" "goenv"
+    add_snippet "gopath" "GOPATH"
+    add_snippet "task" "task completion"
+    add_snippet "bun" "bun"
+    add_snippet "local_bin" "~/.local/bin in PATH"
+    add_snippet "starship" "Starship prompt"
+    add_snippet "eza_aliases" "eza aliases"
+    add_snippet "git_aliases" "git aliases"
+    add_snippet "xdg" "XDG directories"
+    add_snippet "qol" "shell quality of life"
+
+    # Shell-specific snippets
+    if [ "$SHELL_TYPE" = "zsh" ]; then
+        [[ "$(uname)" = "Darwin" ]] && add_snippet "macos_bindkeys" "macOS bindkeys"
+        add_snippet "zsh_dirstack" "zsh features"
+        add_snippet "zsh_qol" "zsh history config"
+    else
+        add_snippet "bash_qol" "bash history config"
+    fi
+
+    add_snippet "bootstrap" "bootstrap alias"
 
     # Finalize snippet section
     finalize_snippets
