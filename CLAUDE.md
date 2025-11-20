@@ -15,6 +15,8 @@ This system has modern CLI tools installed. Use these when executing commands:
 
 - **bat**: Use instead of cat for viewing files - includes syntax highlighting
   - Example: `bat file.txt`
+  - For multiple files in one output: `bat dir/*` or `bat dir/*.ext`
+  - Prefer over: `for file in ...; do echo "=== $file ==="; cat "$file"; done`
 
 - **jq**: JSON processor for parsing and filtering JSON
   - Example: `curl api.com/data | jq '.items[]'`
@@ -56,6 +58,7 @@ This system has modern CLI tools installed. Use these when executing commands:
 - Prefer ast-grep for structural code searching (e.g., finding function calls, patterns)
 - Prefer fd over find for file searching
 - Prefer bat over cat when viewing file contents
+  - Use `bat path/*` to view multiple files in one output instead of loops with cat
 - Prefer sd over sed for find-and-replace operations
 - Prefer procs over ps for process listing
 - Prefer dust over du for disk usage

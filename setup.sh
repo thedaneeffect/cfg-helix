@@ -1,23 +1,80 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Detect user's login shell (not the shell running this script)
+detect_shell() {
+    # Use $SHELL to detect the user's default shell
+    case "$(basename "$SHELL")" in
+        zsh)
+            echo "zsh"
+            ;;
+        bash)
+            echo "bash"
+            ;;
+        *)
+            # Fallback to bash if unknown
+            echo "bash"
+            ;;
+    esac
+}
 
-# Helper: Add content to bashrc if not already present
-add_to_bashrc() {
+SHELL_TYPE=$(detect_shell)
+RC_FILE="$HOME/.${SHELL_TYPE}rc"
+
+# Get script directory (works in both bash and zsh)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
+
+# Helper: Add content to shell rc file if not already present
+add_to_rc() {
     local search_string="$1"
     local content="$2"
     local description="$3"
-    local bashrc="$HOME/.bashrc"
 
-    touch "$bashrc"
-    if ! grep -qF "$search_string" "$bashrc"; then
-        echo -e "\n$content" >> "$bashrc"
+    touch "$RC_FILE"
+    if ! grep -qF "$search_string" "$RC_FILE"; then
+        echo -e "\n$content" >> "$RC_FILE"
         echo "✓ Configured $description"
     else
         echo "✓ $description (already configured)"
     fi
+}
+
+# Helper: Initialize snippet section (called once at start)
+init_snippets() {
+    touch "$RC_FILE"
+
+    # Remove old snippets section if exists
+    if grep -qF "# env-wsl-snippets-start" "$RC_FILE"; then
+        sed -i.bak "/# env-wsl-snippets-start/,/# env-wsl-snippets-end/d" "$RC_FILE"
+    fi
+
+    # Add snippets start marker
+    echo "# env-wsl-snippets-start" >> "$RC_FILE"
+}
+
+# Helper: Finalize snippet section (called once at end)
+finalize_snippets() {
+    echo "# env-wsl-snippets-end" >> "$RC_FILE"
+}
+
+# Helper: Add snippet (no individual deletion needed)
+add_snippet() {
+    local snippet_name="$1"
+    local description="$2"
+    local snippet_file="$SCRIPT_DIR/snippets/${snippet_name}.sh"
+
+    # Check if snippet file exists
+    [[ -f "$snippet_file" ]] || { echo "✗ Error: $snippet_file not found"; return 1; }
+
+    # Add snippet with delimiters, substituting SHELL_TYPE placeholder
+    {
+        echo "# snippet:${snippet_name}.sh"
+        sed "s/SHELL_TYPE/${SHELL_TYPE}/g" "$snippet_file"
+        echo "# end:${snippet_name}.sh"
+        echo ""
+    } >> "$RC_FILE"
+
+    echo "✓ Configured $description"
 }
 
 # Helper: Create timestamped backup of a file
@@ -41,8 +98,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv)
-    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv starship)
+    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv starship)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
@@ -56,7 +113,7 @@ ensure_dependencies() {
 
 # Check if running in WSL
 is_wsl() {
-    if [[ -n "${WSL_DISTRO_NAME}" ]] || grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null; then
+    if [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null; then
         return 0
     fi
     return 1
@@ -124,29 +181,29 @@ install_helix_config() {
     echo "✓ Installed Helix config"
 }
 
-# Configure fzf in bashrc
+# Configure fzf in shell rc
 configure_fzf() {
-    add_to_bashrc 'fzf --bash' 'eval "$(fzf --bash)"' 'fzf'
+    add_snippet "fzf" "fzf"
 }
 
-# Configure zoxide in bashrc
+# Configure zoxide in shell rc
 configure_zoxide() {
-    add_to_bashrc 'zoxide init bash' '# Initialize zoxide (smart cd)\neval "$(zoxide init bash)"' 'zoxide'
+    add_snippet "zoxide" "zoxide"
 }
 
-# Configure direnv in bashrc
+# Configure direnv in shell rc
 configure_direnv() {
-    add_to_bashrc 'direnv hook bash' '# Initialize direnv (auto-load .envrc)\neval "$(direnv hook bash)"' 'direnv'
+    add_snippet "direnv" "direnv"
 }
 
-# Configure goenv in bashrc
+# Configure goenv in shell rc
 configure_goenv() {
-    add_to_bashrc 'goenv init' '# Initialize goenv (Go version manager)\nexport GOENV_ROOT="$HOME/.goenv"\nexport PATH="$GOENV_ROOT/bin:$PATH"\neval "$(goenv init -)"' 'goenv'
+    add_snippet "goenv" "goenv"
 }
 
-# Configure GOPATH in bashrc
+# Configure GOPATH in shell rc
 configure_gopath() {
-    add_to_bashrc 'go env GOPATH' '# Add Go binaries to PATH\nexport PATH="$PATH:$(go env GOPATH)/bin"' 'GOPATH'
+    add_snippet "gopath" "GOPATH"
 }
 
 # Helper: Install Go tool via go install
@@ -182,16 +239,13 @@ install_go_tools() {
     echo "✓ Installed Go tools"
 }
 
-# Configure task completion in bashrc
+# Configure task completion in shell rc
 configure_task() {
-    add_to_bashrc 'task --completion bash' '# task completion\neval "$(task --completion bash)"' 'task completion'
+    add_snippet "task" "task completion"
 }
 
 # Install Claude CLI
 install_claude_cli() {
-    # Ensure ~/.local/bin is in PATH before installing
-    configure_local_bin_path
-
     if command -v claude >/dev/null 2>&1; then
         echo "✓ Claude CLI (already installed)"
         return 0
@@ -213,7 +267,7 @@ configure_claude_instructions() {
     fi
 
     local claude_file="$HOME/.claude/CLAUDE.md"
-    local source_file="$SCRIPT_DIR/.claude/custom_instructions.md"
+    local source_file="$SCRIPT_DIR/CLAUDE.md"
 
     [[ -f "$source_file" ]] || { echo "✗ Error: $source_file not found"; return 1; }
 
@@ -228,12 +282,11 @@ configure_claude_instructions() {
 
     # Remove old section if exists
     if grep -qF "<!-- env-wsl-start -->" "$claude_file"; then
-        sed -i '/<!-- env-wsl-start -->/,/<!-- env-wsl-end -->/d' "$claude_file"
+        sed -i.bak '/<!-- env-wsl-start -->/,/<!-- env-wsl-end -->/d' "$claude_file"
     fi
 
     # Append our instructions with delimiters
     cat >> "$claude_file" << EOF
-
 <!-- env-wsl-start -->
 $(cat "$source_file")
 <!-- env-wsl-end -->
@@ -244,17 +297,45 @@ EOF
 
 # Configure ~/.local/bin in PATH
 configure_local_bin_path() {
-    add_to_bashrc '.local/bin' '# Add ~/.local/bin to PATH\nexport PATH="$HOME/.local/bin:$PATH"' '~/.local/bin in PATH'
+    add_snippet "local_bin" "~/.local/bin in PATH"
 }
 
-# Configure PS1 prompt
-configure_ps1() {
-    add_to_bashrc '# Custom PS1 prompt' '# Custom PS1 prompt (bright green username, cyan directory)\nexport PS1="\\[\\e[92m\\]\\u\\[\\e[0m\\]:\\[\\e[96m\\]\\W\\[\\e[0m\\]\\$ "' 'PS1 prompt'
+# Configure Starship prompt
+configure_starship() {
+    add_snippet "starship" "Starship prompt"
 }
 
 # Configure eza aliases
 configure_eza_aliases() {
-    add_to_bashrc "alias ls='eza'" "# eza aliases (modern ls replacement)\nalias ls='eza'\nalias ll='eza -l'\nalias la='eza -la'\nalias tree='eza --tree'" 'eza aliases'
+    add_snippet "eza_aliases" "eza aliases"
+}
+
+# Configure git shell aliases
+configure_git_aliases() {
+    add_snippet "git_aliases" "git aliases"
+}
+
+# Configure macOS bindkeys for zsh
+configure_macos_bindkeys() {
+    if [[ "$(uname)" != "Darwin" ]] || [[ "$SHELL_TYPE" != "zsh" ]]; then
+        return 0
+    fi
+
+    add_snippet "macos_bindkeys" "macOS bindkeys"
+}
+
+# Configure XDG Base Directory specification
+configure_xdg() {
+    add_snippet "xdg" "XDG directories"
+}
+
+# Configure zsh-specific features
+configure_zsh() {
+    if [[ "$SHELL_TYPE" != "zsh" ]]; then
+        return 0
+    fi
+
+    add_snippet "zsh_dirstack" "zsh features"
 }
 
 # Configure git
@@ -282,37 +363,20 @@ configure_git() {
     echo "✓ Configured git"
 }
 
-# Configure bash quality of life improvements
+# Configure shell quality of life improvements
 configure_bash_qol() {
-    local bashrc="$HOME/.bashrc"
-    touch "$bashrc"
+    add_snippet "qol" "shell quality of life"
 
-    if ! grep -qF 'HISTSIZE=10000' "$bashrc"; then
-        cat >> "$bashrc" << 'EOF'
-
-# Bash history improvements
-export HISTSIZE=10000
-export HISTFILESIZE=20000
-export HISTCONTROL=ignoredups:erasedups
-shopt -s histappend
-
-# Default editor
-export EDITOR=hx
-
-# Useful aliases
-alias ..='cd ..'
-alias ...='cd ../..'
-alias grep='grep --color=auto'
-EOF
-        echo "✓ Configured bash quality of life"
+    if [ "$SHELL_TYPE" = "zsh" ]; then
+        add_snippet "zsh_qol" "zsh history config"
     else
-        echo "✓ bash quality of life (already configured)"
+        add_snippet "bash_qol" "bash history config"
     fi
 }
 
 # Configure bootstrap alias
 configure_bootstrap_alias() {
-    add_to_bashrc "alias bootstrap=" "# Bootstrap alias - re-run setup and reload bashrc\nalias bootstrap='bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/env-wsl/master/bootstrap.sh) && source ~/.bashrc'" 'bootstrap alias'
+    add_snippet "bootstrap" "bootstrap alias"
 }
 
 # Main execution
@@ -320,101 +384,45 @@ main() {
     # Ensure dependencies are installed first
     ensure_dependencies
 
-    case "${1:-all}" in
-        fonts)
-            install_fonts
-            ;;
-        settings)
-            apply_settings
-            ;;
-        helix)
-            install_helix_config
-            ;;
-        fzf)
-            configure_fzf
-            ;;
-        zoxide)
-            configure_zoxide
-            ;;
-        direnv)
-            configure_direnv
-            ;;
-        goenv)
-            configure_goenv
-            ;;
-        go)
-            configure_gopath
-            install_go_tools
-            ;;
-        task)
-            configure_task
-            ;;
-        claude)
-            install_claude_cli
-            configure_claude_instructions
-            ;;
-        ps1)
-            configure_ps1
-            ;;
-        eza)
-            configure_eza_aliases
-            ;;
-        git)
-            configure_git
-            ;;
-        bash)
-            configure_bash_qol
-            ;;
-        bootstrap)
-            configure_bootstrap_alias
-            ;;
-        all)
-            install_fonts
-            apply_settings
-            install_helix_config
-            configure_fzf
-            configure_zoxide
-            configure_direnv
-            configure_goenv
-            configure_gopath
-            install_go_tools
-            configure_task
-            install_claude_cli
-            configure_claude_instructions
-            configure_ps1
-            configure_eza_aliases
-            configure_git
-            configure_bash_qol
-            configure_bootstrap_alias
-            ;;
-        *)
-            echo "Usage: $0 [fonts|settings|helix|fzf|zoxide|direnv|goenv|go|task|claude|ps1|eza|git|bash|bootstrap|all]"
-            echo "  fonts    - Install fonts only"
-            echo "  settings - Apply Windows Terminal settings only"
-            echo "  helix    - Install Helix config only"
-            echo "  fzf      - Configure fzf in .bashrc only"
-            echo "  zoxide   - Configure zoxide in .bashrc only"
-            echo "  direnv   - Configure direnv in .bashrc only"
-            echo "  goenv    - Configure goenv (Go version manager) in .bashrc only"
-            echo "  go       - Configure GOPATH and install Go tools (gopls, golangci-lint-langserver, golines, gofumpt, delve, air, usql)"
-            echo "  task     - Configure task completion in .bashrc only"
-            echo "  claude   - Install Claude CLI and configure instructions"
-            echo "  ps1      - Configure PS1 prompt in .bashrc only"
-            echo "  eza      - Configure eza aliases (ls, ll, la) only"
-            echo "  git      - Configure git settings only"
-            echo "  bash     - Configure bash quality of life improvements only"
-            echo "  bootstrap - Configure bootstrap alias only"
-            echo "  all      - Do everything (default)"
-            exit 1
-            ;;
-    esac
+    # Run all configurations
+    install_fonts
+    apply_settings
+    install_helix_config
+    configure_git
+
+    # Initialize snippet section
+    init_snippets
+
+    configure_fzf
+    configure_zoxide
+    configure_direnv
+    configure_goenv
+    configure_gopath
+    configure_task
+    configure_local_bin_path
+    configure_starship
+    configure_eza_aliases
+    configure_git_aliases
+    configure_macos_bindkeys
+    configure_xdg
+    configure_zsh
+    configure_bash_qol
+    configure_bootstrap_alias
+
+    # Finalize snippet section
+    finalize_snippets
+
+    # Non-snippet configurations
+    install_go_tools
+    install_claude_cli
+    configure_claude_instructions
 
     echo ""
     echo "✓ Setup complete!"
     echo ""
-    echo "Run: source ~/.bashrc"
+    echo "Run: source ~/.${SHELL_TYPE}rc"
     echo ""
     echo "After sourcing, you can re-run setup anytime with: bootstrap"
 }
 
-main "$@"
+main
