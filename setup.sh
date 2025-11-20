@@ -114,6 +114,11 @@ install_bun() {
     curl -fsSL https://bun.sh/install | bash
 }
 
+# Check if running on macOS
+is_macos() {
+    [[ "$(uname)" == "Darwin" ]]
+}
+
 # Check if running in WSL
 is_wsl() {
     if [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null; then
@@ -129,17 +134,38 @@ get_localappdata() {
 
 # Install fonts from fonts/ directory
 install_fonts() {
-    if ! is_wsl; then
-        echo "⊘ Skipping fonts (not WSL)"
+    local fonts_dir="$SCRIPT_DIR/fonts"
+
+    # Skip if fonts directory doesn't exist or is empty
+    if [[ ! -d "$fonts_dir" ]] || [[ -z "$(ls -A "$fonts_dir" 2>/dev/null)" ]]; then
+        echo "⊘ Skipping fonts (no fonts to install)"
         return 0
     fi
 
-    local fonts_dir="$SCRIPT_DIR/fonts"
-    [[ -d "$fonts_dir" ]] || { echo "✗ Error: $fonts_dir not found"; return 1; }
+    if is_wsl; then
+        # WSL: Use PowerShell script to install fonts in Windows
+        powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPT_DIR/install_fonts.ps1")" 2>/dev/null
+        echo "✓ Installed fonts (WSL)"
+    elif is_macos; then
+        # macOS: Copy fonts to user fonts directory
+        local user_fonts="$HOME/Library/Fonts"
+        mkdir -p "$user_fonts"
 
-    # Run PowerShell script to copy and register fonts
-    powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPT_DIR/install_fonts.ps1")" 2>/dev/null
-    echo "✓ Installed fonts"
+        local font_count=0
+        for font in "$fonts_dir"/*.{ttf,otf,TTF,OTF} 2>/dev/null; do
+            [[ -f "$font" ]] || continue
+            cp "$font" "$user_fonts/"
+            ((font_count++))
+        done
+
+        if [[ $font_count -gt 0 ]]; then
+            echo "✓ Installed $font_count fonts (macOS)"
+        else
+            echo "⊘ No fonts found to install"
+        fi
+    else
+        echo "⊘ Skipping fonts (unsupported platform)"
+    fi
 }
 
 # Apply Windows Terminal settings
@@ -169,6 +195,32 @@ apply_settings() {
       "$wt_settings" "$local_patch" > "$temp_file"
     cat "$temp_file" > "$wt_settings"
     echo "✓ Applied Windows Terminal settings"
+}
+
+# Restore iTerm2 settings
+restore_iterm_settings() {
+    if ! is_macos; then
+        echo "⊘ Skipping iTerm2 (not macOS)"
+        return 0
+    fi
+
+    local iterm_plist="$SCRIPT_DIR/com.googlecode.iterm2.plist"
+
+    if [[ ! -f "$iterm_plist" ]]; then
+        echo "⊘ Skipping iTerm2 (settings file not found)"
+        return 0
+    fi
+
+    local iterm_prefs="$HOME/Library/Preferences/com.googlecode.iterm2.plist"
+
+    backup_file "$iterm_prefs"
+    cp "$iterm_plist" "$iterm_prefs"
+
+    # Reload iTerm2 preferences (kill cfprefsd to force reload)
+    killall cfprefsd 2>/dev/null || true
+
+    echo "✓ Restored iTerm2 settings"
+    echo "  Note: Restart iTerm2 for changes to take effect"
 }
 
 # Install Helix config
@@ -439,6 +491,7 @@ main() {
     # Run all configurations
     install_fonts
     apply_settings
+    restore_iterm_settings
     install_helix_config
     configure_git
     configure_secrets

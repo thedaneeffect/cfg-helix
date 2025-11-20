@@ -102,6 +102,45 @@ wrangler secret put SECRET_PASSPHRASE
 wrangler deploy
 ```
 
+## iTerm2 Settings (macOS)
+
+Automatically restores iTerm2 preferences on macOS.
+
+### Backup Current Settings
+
+```bash
+./backup-iterm.sh
+```
+
+This exports your current iTerm2 preferences to `com.googlecode.iterm2.plist`.
+
+### Restore on New Machine
+
+Settings are automatically restored when running `./setup.sh` on macOS. The script will:
+1. Backup existing preferences to `.bak` file
+2. Copy stored settings to `~/Library/Preferences/`
+3. Reload preferences
+
+Restart iTerm2 after setup completes.
+
+## Font Management
+
+Fonts are automatically installed from the `fonts/` directory on both macOS and WSL.
+
+### Backup Fonts (macOS)
+
+```bash
+./backup-fonts.sh
+```
+
+This exports all Input fonts from `~/Library/Fonts` to the `fonts/` directory.
+
+### Restore Fonts
+
+Fonts are automatically installed when running `./setup.sh`:
+- **macOS**: Copied to `~/Library/Fonts`
+- **WSL**: Installed in Windows via PowerShell script
+
 ## Git Configuration
 
 | Setting | Value |
@@ -180,15 +219,20 @@ This updates all snippets and reloads your shell configuration.
 
 ```
 .
-├── bootstrap.sh      # One-liner installer
-├── setup.sh          # Main installation script
-├── secrets           # Secrets management CLI
-├── config.toml       # Helix editor configuration
-├── worker/           # Cloudflare Worker
+├── bootstrap.sh                    # One-liner installer
+├── setup.sh                        # Main installation script
+├── backup-iterm.sh                 # Backup iTerm2 settings (macOS)
+├── backup-fonts.sh                 # Backup fonts (macOS)
+├── secrets                         # Secrets management CLI
+├── config.toml                     # Helix editor configuration
+├── com.googlecode.iterm2.plist     # iTerm2 settings (created by backup-iterm.sh)
+├── fonts/                          # Font files (auto-installed)
+│   └── *.ttf                       # TrueType fonts
+├── worker/                         # Cloudflare Worker
 │   ├── index.js
 │   ├── wrangler.toml
 │   └── README.md
-└── snippets/         # Shell configurations
+└── snippets/                       # Shell configurations
     ├── fzf.sh
     ├── zoxide.sh
     ├── git_aliases.sh
