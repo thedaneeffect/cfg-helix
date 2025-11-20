@@ -44,17 +44,17 @@ init_snippets() {
     touch "$RC_FILE"
 
     # Remove old snippets section if exists
-    if grep -qF "# env-wsl-snippets-start" "$RC_FILE"; then
-        sed -i.bak "/# env-wsl-snippets-start/,/# env-wsl-snippets-end/d" "$RC_FILE"
+    if grep -qF "# dotfiles-snippets-start" "$RC_FILE"; then
+        sed -i.bak "/# dotfiles-snippets-start/,/# dotfiles-snippets-end/d" "$RC_FILE"
     fi
 
     # Add snippets start marker
-    echo "# env-wsl-snippets-start" >> "$RC_FILE"
+    echo "# dotfiles-snippets-start" >> "$RC_FILE"
 }
 
 # Helper: Finalize snippet section (called once at end)
 finalize_snippets() {
-    echo "# env-wsl-snippets-end" >> "$RC_FILE"
+    echo "# dotfiles-snippets-end" >> "$RC_FILE"
 }
 
 # Helper: Add snippet (no individual deletion needed)
@@ -281,15 +281,15 @@ configure_claude_instructions() {
     fi
 
     # Remove old section if exists
-    if grep -qF "<!-- env-wsl-start -->" "$claude_file"; then
-        sed -i.bak '/<!-- env-wsl-start -->/,/<!-- env-wsl-end -->/d' "$claude_file"
+    if grep -qF "<!-- dotfiles-start -->" "$claude_file"; then
+        sed -i.bak '/<!-- dotfiles-start -->/,/<!-- dotfiles-end -->/d' "$claude_file"
     fi
 
     # Append our instructions with delimiters
     cat >> "$claude_file" << EOF
-<!-- env-wsl-start -->
+<!-- dotfiles-start -->
 $(cat "$source_file")
-<!-- env-wsl-end -->
+<!-- dotfiles-end -->
 EOF
 
     echo "✓ Configured Claude custom instructions"

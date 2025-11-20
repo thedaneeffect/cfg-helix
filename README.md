@@ -7,14 +7,14 @@ My development environment configuration for macOS and WSL, with automatic shell
 **One-liner installation:**
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/env-wsl/master/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/thedaneeffect/dotfiles/master/bootstrap.sh)
 ```
 
 **Or clone and run manually:**
 
 ```bash
-git clone https://github.com/thedaneeffect/env-wsl.git
-cd env-wsl
+git clone https://github.com/thedaneeffect/dotfiles.git
+cd dotfiles
 ./setup.sh
 ```
 
@@ -59,7 +59,7 @@ After installation, use these commands to navigate:
 
 Examples:
 ```bash
-z proj          # Jump to ~/projects/env-wsl
+z proj          # Jump to ~/projects/dotfiles
 zi              # Open fzf to select from your directory history
 z doc down      # Jump to ~/Documents/Downloads
 ```
