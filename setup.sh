@@ -98,8 +98,8 @@ ensure_dependencies() {
     fi
 
     # Install missing dependencies
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv starship)
-    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv starship)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv starship bun)
+    local cmds=(yq hx go fzf task zoxide rg bat eza ast-grep fd direnv delta jq btop tldr sd glow tokei gh procs dust typescript-language-server golangci-lint zig zls taplo yaml-language-server goenv starship bun)
 
     for i in "${!deps[@]}"; do
         if ! command -v "${cmds[$i]}" >/dev/null 2>&1; then
@@ -242,6 +242,11 @@ install_go_tools() {
 # Configure task completion in shell rc
 configure_task() {
     add_snippet "task" "task completion"
+}
+
+# Configure bun
+configure_bun() {
+    add_snippet "bun" "bun"
 }
 
 # Install Claude CLI
@@ -399,6 +404,7 @@ main() {
     configure_goenv
     configure_gopath
     configure_task
+    configure_bun
     configure_local_bin_path
     configure_starship
     configure_eza_aliases
