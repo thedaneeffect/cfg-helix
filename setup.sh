@@ -152,11 +152,13 @@ install_fonts() {
         mkdir -p "$user_fonts"
 
         local font_count=0
-        for font in "$fonts_dir"/*.{ttf,otf,TTF,OTF} 2>/dev/null; do
+        shopt -s nullglob
+        for font in "$fonts_dir"/*.{ttf,otf,TTF,OTF}; do
             [[ -f "$font" ]] || continue
             cp "$font" "$user_fonts/"
             ((font_count++))
         done
+        shopt -u nullglob
 
         if [[ $font_count -gt 0 ]]; then
             echo "✓ Installed $font_count fonts (macOS)"
@@ -256,9 +258,9 @@ go_install() {
     local tags="${3:-}"
 
     if [[ -n "$tags" ]]; then
-        go install -tags "$tags" "$package@latest" && echo "✓ Installed $name"
+        go install -tags "$tags" "$package@latest"
     else
-        go install "$package@latest" && echo "✓ Installed $name"
+        go install "$package@latest"
     fi
 }
 
@@ -279,14 +281,11 @@ install_go_tools() {
     go_install "github.com/air-verse/air" "air"
     go_install "github.com/xo/usql" "usql" "postgres sqlite3"
     go_install "github.com/docker/docker-language-server/cmd/docker-language-server" "docker-language-server"
-
-    echo "✓ Installed Go tools"
 }
 
 # Install Claude CLI
 install_claude_cli() {
     if command -v claude >/dev/null 2>&1; then
-        echo "✓ Claude CLI (already installed)"
         return 0
     fi
 
@@ -397,6 +396,12 @@ EOF
 setup_gpg_key() {
     if [[ "${SKIP_SECRETS_PULL:-}" == "true" ]]; then
         echo "⊘ Skipping secrets pull (SKIP_SECRETS_PULL=true)"
+        return 0
+    fi
+
+    # Check if GPG key is already imported
+    if gpg --list-keys 7B5FC82E53B5ABE6 >/dev/null 2>&1; then
+        echo "✓ GPG key already imported"
         return 0
     fi
 
