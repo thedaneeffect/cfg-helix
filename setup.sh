@@ -98,9 +98,15 @@ ensure_dependencies() {
     fi
 
     # Install dependencies (brew skips already installed packages)
-    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship bun)
+    local deps=(yq helix go fzf go-task zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tlrc sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship)
 
     brew install "${deps[@]}"
+}
+
+# Install bun
+install_bun() {
+    command -v bun >/dev/null 2>&1 && return 0
+    curl -fsSL https://bun.sh/install | bash
 }
 
 # Check if running in WSL
@@ -286,6 +292,7 @@ configure_git() {
 main() {
     # Ensure dependencies are installed first
     ensure_dependencies
+    install_bun
 
     # Run all configurations
     install_fonts
