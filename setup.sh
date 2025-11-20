@@ -102,7 +102,7 @@ ensure_dependencies() {
     fi
 
     # Install dependencies (brew skips already installed packages)
-    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij bitwarden-cli)
+    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij bitwarden-cli gnupg)
 
     brew install -q "${deps[@]}"
     brew install -q go-task/tap/go-task
@@ -284,25 +284,53 @@ install_secrets_cli() {
     cp "$secrets_script" "$secrets_dest"
     chmod +x "$secrets_dest"
     echo "✓ Installed secrets CLI"
+}
 
-    # Try to pull secrets if Bitwarden is available and unlocked
-    if command -v bw >/dev/null 2>&1 && bw login --check &>/dev/null && [[ -n "${BW_SESSION:-}" ]]; then
-        echo "→ Pulling secrets from Bitwarden..."
-        if "$secrets_dest" pull 2>/dev/null; then
-            echo "✓ Pulled secrets from Bitwarden"
+# Setup GPG key for commit signing
+setup_gpg_key() {
+    if [[ "${SKIP_SECRETS_PULL:-}" == "true" ]]; then
+        echo "⊘ Skipping secrets pull (SKIP_SECRETS_PULL=true)"
+        return 0
+    fi
+
+    if ! command -v secrets >/dev/null 2>&1; then
+        echo "⊘ Skipping GPG key setup (secrets CLI not available)"
+        return 0
+    fi
+
+    if ! command -v bw >/dev/null 2>&1 || ! bw login --check &>/dev/null || [[ -z "${BW_SESSION:-}" ]]; then
+        echo "⊘ Skipping GPG key setup (Bitwarden not available or not unlocked)"
+        return 0
+    fi
+
+    echo "→ Pulling secrets from Bitwarden..."
+    if secrets pull 2>/dev/null; then
+        echo "✓ Pulled secrets from Bitwarden"
+
+        if [[ -f "$HOME/.ssh/gpg" ]]; then
+            echo "→ Importing GPG key..."
+            if gpg --import "$HOME/.ssh/gpg" 2>/dev/null; then
+                echo "✓ Imported GPG key to keychain"
+            else
+                echo "⊘ GPG key may already be imported"
+            fi
         else
-            echo "⊘ No secrets in Bitwarden yet (use: secrets push)"
+            echo "⊘ GPG key file not found at ~/.ssh/gpg"
         fi
+    else
+        echo "⊘ No secrets in Bitwarden yet (use: secrets push)"
     fi
 }
 
 # Configure git
 configure_git() {
     echo "→ Configuring git..."
-    git config --global user.name "Dane"
+    git config --global user.name "dane"
     git config --global user.email "dane@medieval.software"
+    git config --global user.signingkey 7B5FC82E53B5ABE6
     git config --global init.defaultBranch main
     git config --global pull.rebase false
+    git config --global commit.gpgsign true
 
     # Use Helix as editor
     git config --global core.editor "hx"
@@ -404,15 +432,11 @@ main() {
     install_claude_cli
     configure_claude_instructions
     install_secrets_cli
+    setup_gpg_key
 
-    echo ""
     echo "✓ Setup complete!"
     echo ""
     echo "Run: source ~/.${SHELL_TYPE}rc"
-    echo ""
-    echo "After sourcing, you can re-run setup anytime with: bootstrap"
-    echo ""
-    echo "Manage secrets with: secrets add <file>, secrets push, secrets pull"
 }
 
 main
