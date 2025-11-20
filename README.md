@@ -103,7 +103,7 @@ z doc down      # Jump to ~/Documents/Downloads
 
 ### Secrets Management
 
-Secure, encrypted storage for dotfiles secrets using Cloudflare Workers:
+**Encrypted secrets storage** with Cloudflare Workers. Your secrets are encrypted with AES-256 before upload - even if someone accessed your Cloudflare storage, they couldn't decrypt it without your passphrase.
 
 ```bash
 # Add files to track
@@ -131,11 +131,13 @@ secrets delete github
 ```
 
 **Features:**
-- Base64-encoded tarballs stored in Cloudflare KV (free tier: 1GB storage)
-- Bearer token authentication via passphrase
-- Named groups for organizing secrets (work, personal, github, etc.)
-- Metadata caching for fast listings without downloads
-- Automatic macOS metadata exclusion (`._*` files)
+- **End-to-end encryption**: AES-256-CBC encryption with PBKDF2 key derivation
+- **Defense-in-depth**: Data encrypted before upload, stored encrypted in Cloudflare KV
+- **Bearer token authentication**: Passphrase protects both encryption and API access
+- **Named groups**: Organize secrets by purpose (work, personal, github, etc.)
+- **Metadata caching**: Fast listings without downloading/decrypting tarballs
+- **Automatic cleanup**: Excludes macOS metadata (`._*` files, `.DS_Store`)
+- **Free tier**: 1GB storage, 100k reads/day, 1k writes/day on Cloudflare
 
 **Worker Deployment:**
 
@@ -153,6 +155,18 @@ wrangler deploy
 ```
 
 Or deploy via Cloudflare Dashboard - connect this GitHub repo for automatic deployments.
+
+**Security Model:**
+
+The secrets system provides multiple layers of security:
+
+1. **Client-side encryption**: Secrets are encrypted with AES-256-CBC using your passphrase before upload
+2. **Encrypted storage**: Only encrypted data exists in Cloudflare KV
+3. **Transport security**: HTTPS for all API requests
+4. **Authentication**: Bearer token (same passphrase) prevents unauthorized access
+5. **PBKDF2 key derivation**: Passphrase is properly derived into encryption keys
+
+Even with full access to your Cloudflare account, an attacker cannot decrypt your secrets without the passphrase.
 
 ### Git Configuration & GPG Signing
 
