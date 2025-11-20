@@ -4,29 +4,27 @@ This dotfiles setup includes a custom `secrets` CLI tool for managing sensitive 
 
 **✅ Works with free Bitwarden tier** - splits data into 8KB chunks across multiple secure notes (10k limit per note).
 
+**✅ Named groups** - Organize secrets by purpose (github, work, personal) with independent registries.
+
 ## Quick Start
 
 ### First Time Setup
 
 ```bash
-# 1. Add your sensitive files to the registry
-# Add entire directories (files are added individually)
-secrets add ~/.ssh ~/.aws
+# 1. Add secrets to default group
+secrets add ~/.ssh/id_rsa ~/.env
 
-# Or add specific files
-secrets add ~/.env ~/.gitconfig.local
+# OR organize into named groups
+secrets add ~/.ssh/github_rsa -g github
+secrets add ~/.aws/credentials -g work
 
 # 2. View what's tracked
-secrets list
-# Output shows individual files:
-#   ✓ .ssh/id_rsa
-#   ✓ .ssh/id_rsa.pub
-#   ✓ .ssh/config
-#   ✓ .env
-#   ✓ .aws/credentials
+secrets list              # Default group
+secrets list github       # Github group
 
 # 3. Push secrets (will prompt for Bitwarden login/password)
-secrets push
+secrets push              # Push default group
+secrets push github       # Push github group
 
 # The command will:
 # - Prompt for Bitwarden email and password
@@ -42,15 +40,70 @@ secrets push
 # 1. Run setup (installs Bitwarden CLI and secrets tool)
 ./setup.sh
 
-# 2. Pull your secrets (will prompt for Bitwarden login/password)
-secrets pull
+# 2. See what groups are available
+secrets groups
 
-# The command will:
-# - Prompt for Bitwarden email and password
-# - Export BW_SESSION automatically
-# - Download and restore all your secrets
+# 3. Pull specific groups
+secrets pull github       # Pull only github secrets
+secrets pull work         # Pull only work secrets
+secrets pull              # Pull default group
 
 # All your secrets are restored!
+```
+
+## Named Groups
+
+Groups let you organize secrets by purpose and pull only what you need on each machine.
+
+### Group Basics
+- **Default group**: Used when no `-g` flag specified (backwards compatible)
+- **Named groups**: E.g., `github`, `work`, `personal`
+- **Independent**: Each group has its own registry (`~/.secrets`, `~/.secrets.github`, etc.)
+- **Flexible**: Files can be in multiple groups if needed
+
+### Group Commands
+
+```bash
+# List all available groups
+secrets groups
+
+# Add to specific group
+secrets add ~/.ssh/github_rsa -g github
+secrets add ~/.aws/work-creds -g work
+
+# Push/pull specific group
+secrets push github
+secrets pull work
+
+# List files in a group
+secrets list github
+secrets status work
+```
+
+### Common Use Cases
+
+**Machine-specific secrets:**
+```bash
+# Laptop
+secrets add ~/.ssh/personal_rsa -g personal
+secrets push personal
+
+# Work server
+secrets pull work  # Only get work secrets
+```
+
+**Security boundaries:**
+```bash
+# Separate sensitive credentials
+secrets add ~/.ssh/prod_deploy_key -g production
+secrets add ~/.ssh/github_key -g github
+```
+
+**Organization:**
+```bash
+# Group by project or purpose
+secrets add ~/.aws/client-a -g client-a
+secrets add ~/.aws/client-b -g client-b
 ```
 
 ## Commands
