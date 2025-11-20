@@ -321,6 +321,10 @@ export SECRETS_URL="$url"
 export SECRETS_PASSPHRASE="$passphrase"
 EOF
 
+    # Export for current session so setup_gpg_key can use them
+    export SECRETS_URL="$url"
+    export SECRETS_PASSPHRASE="$passphrase"
+
     echo "✓ Configured secrets"
 }
 
