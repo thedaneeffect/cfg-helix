@@ -46,6 +46,7 @@ init_snippets() {
     # Remove old snippets section if exists
     if grep -qF "# dotfiles-snippets-start" "$RC_FILE"; then
         sed -i.bak "/# dotfiles-snippets-start/,/# dotfiles-snippets-end/d" "$RC_FILE"
+        rm -f "$RC_FILE.bak"
     fi
 
     # Add snippets start marker
@@ -77,10 +78,10 @@ add_snippet() {
     echo "✓ Configured $description"
 }
 
-# Helper: Create timestamped backup of a file
+# Helper: Create .bak backup of a file (only if backup doesn't already exist)
 backup_file() {
     local file="$1"
-    [[ -f "$file" ]] && cp "$file" "$file.backup.$(date +%s)"
+    [[ -f "$file" ]] && [[ ! -f "$file.bak" ]] && cp "$file" "$file.bak"
 }
 
 # Ensure dependencies are installed
@@ -98,7 +99,7 @@ ensure_dependencies() {
     fi
 
     # Install dependencies (brew skips already installed packages)
-    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted)
+    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij)
 
     brew install -q "${deps[@]}"
     brew install -q go-task/tap/go-task
@@ -253,6 +254,7 @@ configure_claude_instructions() {
     # Remove old section if exists
     if grep -qF "<!-- dotfiles-start -->" "$claude_file"; then
         sed -i.bak '/<!-- dotfiles-start -->/,/<!-- dotfiles-end -->/d' "$claude_file"
+        rm -f "$claude_file.bak"
     fi
 
     # Append our instructions with delimiters
@@ -282,6 +284,23 @@ configure_git() {
     git config --global alias.co checkout
     git config --global alias.br branch
     git config --global alias.lg "log --graph --oneline --decorate"
+    git config --global alias.cm "commit -m"
+    git config --global alias.amend "commit --amend --no-edit"
+    git config --global alias.uncommit "reset --soft HEAD~1"
+    git config --global alias.unstage "reset HEAD --"
+    git config --global alias.last "log -1 HEAD"
+    git config --global alias.branches "branch -a"
+    git config --global alias.remotes "remote -v"
+    git config --global alias.contributors "shortlog -sn"
+
+    # Better diff algorithm
+    git config --global diff.algorithm histogram
+
+    # Prune on fetch
+    git config --global fetch.prune true
+
+    # Reuse recorded resolution (helps with repetitive merge conflicts)
+    git config --global rerere.enabled true
 
     # Configure delta as pager if available
     if command -v delta >/dev/null 2>&1; then
@@ -289,6 +308,17 @@ configure_git() {
         git config --global interactive.diffFilter "delta --color-only"
         git config --global delta.navigate true
         git config --global merge.conflictStyle zdiff3
+    fi
+
+    # Install global gitignore
+    local gitignore_source="$SCRIPT_DIR/.gitignore_global"
+    local gitignore_dest="$HOME/.gitignore_global"
+
+    if [[ -f "$gitignore_source" ]]; then
+        backup_file "$gitignore_dest"
+        cp "$gitignore_source" "$gitignore_dest"
+        git config --global core.excludesFile "$gitignore_dest"
+        echo "✓ Installed global gitignore"
     fi
 
     echo "✓ Configured git"
@@ -321,6 +351,8 @@ main() {
     add_snippet "starship" "Starship prompt"
     add_snippet "eza_aliases" "eza aliases"
     add_snippet "git_aliases" "git aliases"
+    add_snippet "fzf_git" "fzf + git integration"
+    add_snippet "dev" "development utilities"
     add_snippet "xdg" "XDG directories"
     add_snippet "qol" "shell quality of life"
 

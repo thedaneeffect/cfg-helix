@@ -1,0 +1,150 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Editor backups and swap files
+*~
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+*.temp
+.*.sw[a-p]
+.netrwhist
+
+# IDE and editor directories
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.vs/
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+tags
+[._]*.un~
+
+# Emacs
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Build artifacts and dependencies
+node_modules/
+bower_components/
+jspm_packages/
+vendor/
+dist/
+build/
+target/
+out/
+.gradle/
+.m2/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log.*
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+.envrc
+*.key
+*.pem
+secrets.yml
+credentials.json
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Compiled source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.dylib
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Direnv
+.direnv/
+
+# Coverage and test reports
+coverage/
+.coverage
+.nyc_output/
+htmlcov/
+*.cover
+
+# Misc
+.cache/
+.sass-cache/
+*.pid
+*.seed
+*.pid.lock
+.grunt
+.lock-wscript
+.parcel-cache
+.claude
