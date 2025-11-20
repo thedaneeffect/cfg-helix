@@ -81,7 +81,10 @@ add_snippet() {
 # Helper: Create .bak backup of a file (only if backup doesn't already exist)
 backup_file() {
     local file="$1"
-    [[ -f "$file" ]] && [[ ! -f "$file.bak" ]] && cp "$file" "$file.bak"
+    if [[ -f "$file" ]] && [[ ! -f "$file.bak" ]]; then
+        cp "$file" "$file.bak"
+    fi
+    return 0
 }
 
 # Ensure dependencies are installed
@@ -99,7 +102,7 @@ ensure_dependencies() {
     fi
 
     # Install dependencies (brew skips already installed packages)
-    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij)
+    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij bitwarden-cli)
 
     brew install -q "${deps[@]}"
     brew install -q go-task/tap/go-task
@@ -267,6 +270,60 @@ EOF
     echo "✓ Configured Claude custom instructions"
 }
 
+# Install secrets from Bitwarden
+install_secrets() {
+    if ! command -v bw >/dev/null 2>&1; then
+        echo "⊘ Skipping secrets (Bitwarden CLI not installed)"
+        return 0
+    fi
+
+    # Check if logged in
+    if ! bw login --check &>/dev/null; then
+        echo "⊘ Skipping secrets (not logged into Bitwarden)"
+        echo "  Run: bw login your-email@example.com"
+        return 0
+    fi
+
+    # Check if session is unlocked
+    if [[ -z "${BW_SESSION:-}" ]]; then
+        echo "⊘ Skipping secrets (Bitwarden locked)"
+        echo "  Run: export BW_SESSION=\"\$(bw unlock --raw)\""
+        return 0
+    fi
+
+    echo "→ Installing secrets from Bitwarden..."
+
+    # Helper function to get secure note by name
+    get_secret() {
+        local name="$1"
+        bw get item "$name" 2>/dev/null | jq -r '.notes // empty'
+    }
+
+    # Helper function to get attachment by name
+    get_attachment() {
+        local item_name="$1"
+        local filename="$2"
+        local output_path="$3"
+
+        local item_id=$(bw list items | jq -r --arg name "$item_name" '.[] | select(.name == $name) | .id')
+        if [[ -n "$item_id" ]]; then
+            bw get attachment "$filename" --itemid "$item_id" --output "$output_path" 2>/dev/null
+        fi
+    }
+
+    # Example: Install SSH keys
+    # get_attachment "SSH Keys" "id_rsa" "$HOME/.ssh/id_rsa"
+    # chmod 600 "$HOME/.ssh/id_rsa"
+
+    # Example: Install environment file
+    # get_secret "Environment Variables" > "$HOME/.env"
+
+    # Example: Install SSH config
+    # get_secret "SSH Config" > "$HOME/.ssh/config"
+
+    echo "✓ Installed secrets from Bitwarden"
+}
+
 # Configure git
 configure_git() {
     echo "→ Configuring git..."
@@ -374,6 +431,7 @@ main() {
     install_go_tools
     install_claude_cli
     configure_claude_instructions
+    install_secrets
 
     echo ""
     echo "✓ Setup complete!"
