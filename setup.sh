@@ -460,6 +460,12 @@ main() {
     add_snippet "qol" "shell quality of life"
     add_snippet "secrets" "secrets configuration"
 
+    # Delete secrets snippet file after it's been added (contains sensitive data)
+    local secrets_snippet="$SCRIPT_DIR/snippets/secrets.sh"
+    if [[ -f "$secrets_snippet" ]]; then
+        rm -f "$secrets_snippet"
+    fi
+
     # Shell-specific snippets
     if [ "$SHELL_TYPE" = "zsh" ]; then
         [[ "$(uname)" = "Darwin" ]] && add_snippet "macos_bindkeys" "macOS bindkeys"
