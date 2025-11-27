@@ -1,0 +1,117 @@
+# ============================================================================
+# XDG Base Directory Specification
+# ============================================================================
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_CACHE_HOME="$HOME/.cache"
+export XDG_STATE_HOME="$HOME/.local/state"
+
+# Respect XDG directories
+export CARGO_HOME="$XDG_DATA_HOME/cargo"
+export GNUPGHOME="$XDG_DATA_HOME/gnupg"
+export LESSHISTFILE="$XDG_STATE_HOME/less/history"
+export NPM_CONFIG_CACHE="$XDG_CACHE_HOME/npm"
+
+# ============================================================================
+# Environment
+# ============================================================================
+export EDITOR=hx
+export PATH="$HOME/.local/bin:$PATH"
+
+# History
+export HISTFILE=~/.zsh_history
+export HISTSIZE=10000
+export SAVEHIST=20000
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_DUPS
+setopt SHARE_HISTORY
+
+# Directory navigation
+setopt AUTO_PUSHD           # Automatically push directories onto stack
+setopt CDABLE_VARS          # Allow cd to variable names
+setopt PUSHD_MINUS          # Swap meaning of cd +1 and cd -1
+
+# ============================================================================
+# Homebrew
+# ============================================================================
+if [[ -f /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -f /usr/local/bin/brew ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+elif [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
+export HOMEBREW_NO_ENV_HINTS=1
+
+# ============================================================================
+# mise - unified tool version management
+# ============================================================================
+eval "$(mise activate zsh 2>/dev/null)"
+
+# ============================================================================
+# Bun
+# ============================================================================
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
+
+# ============================================================================
+# Completion & Interactive Features
+# ============================================================================
+autoload -Uz compinit
+compinit
+
+zstyle ':completion:*:directory-stack' list-colors '=(#b) #([0-9]#)*( *)==95=38;5;12'
+
+# Key bindings (Home/End)
+bindkey "^[[H" beginning-of-line
+bindkey "^[[F" end-of-line
+
+# Prompt (starship)
+eval "$(starship init zsh)"
+
+# Tool completions
+eval "$(fzf --zsh)"
+eval "$(zoxide init zsh)"
+eval "$(mise completion zsh)"
+
+# ============================================================================
+# Aliases
+# ============================================================================
+
+# Navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+
+# Modern replacements
+alias ls='eza'
+alias ll='eza -l'
+alias la='eza -la'
+alias tree='eza --tree'
+
+# Git shortcuts
+alias gst='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gl='git log'
+alias gcob='git branch | fzf | xargs git checkout'
+alias glf='git log --oneline | fzf --preview "git show {1}"'
+
+# mise shortcuts
+alias mi='mise'
+alias mii='mise install'
+alias miu='mise upgrade'
+alias mis='mise use'
+alias mil='mise list'
+alias mio='mise outdated'
+alias mise-doctor='mise doctor'
+alias mise-versions='mise list --installed'
+
+# Utilities
+alias grep='grep --color=auto'
+alias rc='$EDITOR ~/.$(basename $SHELL)rc'
+alias myip='curl -s ifconfig.me'
+alias ports='lsof -i -P -n | grep LISTEN'
+alias bootstrap='bash <(curl -fsSL https://secrets.medieval.software/bootstrap) && source ~/.zshrc'

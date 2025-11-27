@@ -1,54 +1,61 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Hard-code to zsh (installed by setup if not present)
-RC_FILE="$HOME/.zshrc"
-ZSH_CONFIG_DIR="$HOME/.config/zsh.d"
+# Uncomment for debugging: set -x
+# Or run with: DEBUG=1 ./setup.sh
+[[ "${DEBUG:-}" == "1" ]] && set -x
+
+# Check if running as root
+if [[ $EUID -eq 0 ]] && [[ -z "${ALLOW_ROOT:-}" ]]; then
+    echo "✗ Error: This script should not be run as root"
+    echo ""
+    echo "Homebrew and other tools work best with a non-root user."
+    echo ""
+    echo "In Docker, create a user first:"
+    echo "  adduser --disabled-password --gecos '' user"
+    echo "  su - user"
+    echo "  cd /dotfiles"
+    echo "  ./setup.sh"
+    echo ""
+    echo "Or set ALLOW_ROOT=1 to bypass (not recommended):"
+    echo "  ALLOW_ROOT=1 ./setup.sh"
+    exit 1
+fi
 
 # Get script directory (works in both bash and zsh)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
+RC_FILE="$HOME/.zshrc"
 
-# Install zsh configuration files
+# Install zsh configuration
 install_zsh_config() {
+    local source_file="$SCRIPT_DIR/configs/zshrc"
+
+    if [[ ! -f "$source_file" ]]; then
+        echo "✗ Error: $source_file not found"
+        return 1
+    fi
+
     # Ensure .zshrc exists
     touch "$RC_FILE"
 
-    # Remove old marker-based snippets if they exist
-    if grep -qF "# dotfiles-snippets-start" "$RC_FILE"; then
-        sed -i.bak "/# dotfiles-snippets-start/,/# dotfiles-snippets-end/d" "$RC_FILE"
+    # Backup existing .zshrc
+    backup_file "$RC_FILE"
+
+    # Remove old dotfiles section if exists
+    if grep -qF "# dotfiles-start" "$RC_FILE"; then
+        sed -i.bak '/# dotfiles-start/,/# dotfiles-end/d' "$RC_FILE"
         rm -f "$RC_FILE.bak"
-        echo "✓ Removed old marker-based snippets"
     fi
 
-    # Check if .zshrc already sources the config directory
-    if ! grep -qF "# Source all config files from ~/.config/zsh.d/" "$RC_FILE"; then
-        cat >> "$RC_FILE" << 'EOF'
+    # Append configuration with delimiters
+    cat >> "$RC_FILE" << EOF
 
-# Source all config files from ~/.config/zsh.d/
-if [[ -d "$HOME/.config/zsh.d" ]]; then
-    for config in "$HOME/.config/zsh.d"/*.zsh(N); do
-        source "$config"
-    done
-fi
+# dotfiles-start
+$(cat "$source_file")
+# dotfiles-end
 EOF
-        echo "✓ Configured .zshrc to source ~/.config/zsh.d/"
-    fi
 
-    local zshd="$HOME/.config/zsh.d"
-
-    # Copy entire zsh.d directory to ~/.config/
-    if [[ -d "$SCRIPT_DIR/zsh.d" ]]; then
-        mkdir -p "$HOME/.config"
-        if gum confirm "rm -fr $zshd"; then
-            echo "rm -fr $zshd"
-            rm -fr "$zshd"
-        fi
-        cp -r "$SCRIPT_DIR/zsh.d" "$HOME/.config/"
-        echo "✓ Copied zsh configuration files to ~/.config/zsh.d/"
-    else
-        echo "✗ Error: $SCRIPT_DIR/zsh.d not found"
-        return 1
-    fi
+    echo "✓ Configured .zshrc"
 }
 
 # Helper: Create .bak backup of a file (only if backup doesn't already exist)
@@ -60,37 +67,45 @@ backup_file() {
     return 0
 }
 
-# Install zsh and oh-my-zsh
-install_zsh_and_omz() {
-    # Install zsh if not present
-    if ! command -v zsh >/dev/null 2>&1; then
-        echo "→ Installing zsh..."
-        if command -v brew >/dev/null 2>&1; then
-            brew install -q zsh
-        elif command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get install -y zsh
-        elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y zsh
-        elif command -v pacman >/dev/null 2>&1; then
-            sudo pacman -S --noconfirm zsh
-        else
-            echo "✗ Error: Cannot install zsh (unsupported package manager)"
-            exit 1
-        fi
-        echo "✓ Installed zsh"
+# Helper: Copy config file from configs/ to destination
+# Usage: copy_config "source.toml" "~/.config/app/config.toml"
+copy_config() {
+    local source_name="$1"
+    local dest_path="$2"
+
+    # Expand tilde in destination path
+    dest_path="${dest_path/#\~/$HOME}"
+
+    local source_file="$SCRIPT_DIR/configs/$source_name"
+
+    # Check source exists
+    if [[ ! -f "$source_file" ]]; then
+        echo "✗ Error: $source_file not found"
+        return 1
     fi
 
-    # Install oh-my-zsh (handles zsh configuration)
-    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-        echo "→ Installing oh-my-zsh..."
-        # Use unattended installation
-        RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-        echo "✓ Installed oh-my-zsh"
-    fi
+    # Create parent directory
+    mkdir -p "$(dirname "$dest_path")"
+
+    # Backup existing file
+    backup_file "$dest_path"
+
+    # Copy file
+    cp "$source_file" "$dest_path"
+
+    return 0
 }
 
 # Change default shell to zsh
-change_shell_to_zsh() {
+configure_zsh() {
+    brew install -q zsh
+
+    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+        RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    fi
+
+    install_zsh_config
+    
     local current_shell=$(basename "$SHELL")
 
     if [[ "$current_shell" != "zsh" ]]; then
@@ -103,52 +118,89 @@ change_shell_to_zsh() {
             echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
         fi
 
-        # Change shell (requires password)
-        chsh -s "$zsh_path"
-        echo "✓ Changed default shell to zsh"
-        echo "  Note: Log out and back in (or run 'exec zsh') for change to take effect"
+        # Change shell (may require password or sudo)
+        # Try sudo first (works in Docker/containers), fall back to regular chsh
+        if sudo chsh -s "$zsh_path" "$USER" 2>/dev/null || chsh -s "$zsh_path" 2>/dev/null; then
+            echo "✓ Changed default shell to zsh"
+            echo "  Note: Will take effect on next login or run 'exec zsh' to switch now"
+        else
+            echo "⊘ Could not change default shell"
+            echo "  You can still use zsh by running 'exec zsh'"
+        fi
     fi
 }
 
-# Install mise
-install_mise() {
-    if command -v mise >/dev/null 2>&1; then
+# Install Homebrew if not present
+install_homebrew() {
+    # Less verbose, we don't need all the hints
+    export HOMEBREW_NO_ENV_HINTS=1
+
+    if command -v brew >/dev/null 2>&1; then
+        echo "✓ Homebrew (already installed)"
         return 0
     fi
 
-    curl https://mise.jdx.dev/install.sh | sh
+    echo "→ Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-    # Add to PATH for current session
+    # Add brew to PATH for this session
+    if [[ -f /opt/homebrew/bin/brew ]]; then
+        # macOS Apple Silicon
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -f /usr/local/bin/brew ]]; then
+        # macOS Intel
+        eval "$(/usr/local/bin/brew shellenv)"
+    elif [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+        # Linux/WSL
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    fi
+
+    echo "✓ Installed Homebrew"
+}
+
+# Install mise and configure it
+install_and_configure_mise() {
+    echo "→ Installing mise..."
+    brew install -q mise
+    echo "✓ Installed mise"
+
+    # Copy global mise configuration
+    copy_config "mise.toml" "~/.config/mise/config.toml"
+
+    # Install core languages first (warnings about go: packages are expected)
+    echo "→ Installing core languages (go, rust, bun, zig)..."
+    mise install go rust bun zig
+    echo "✓ Installed core languages"
+
+    # Activate mise now that core languages are installed
     export PATH="$HOME/.local/bin:$PATH"
-
-    # Activate mise for current session
     eval "$(mise activate bash)"
+
+    # Install all remaining mise tools
+    echo "→ Installing remaining mise tools..."
+    mise install
+    echo "✓ Installed all mise tools"
 }
 
-# Install global mise configuration
-install_mise_config() {
-    local mise_config_dir="$HOME/.config/mise"
-    local mise_config="$mise_config_dir/config.toml"
-    local source_config="$SCRIPT_DIR/configs/mise.toml"
+# Install Homebrew packages that aren't in mise
+install_homebrew_packages() {
+    echo "→ Installing additional Homebrew packages..."
 
-    [[ -f "$source_config" ]] || { echo "✗ Error: $source_config not found"; return 1; }
+    local deps=(
+        gum
+        gnupg
+        btop      # Not available via mise on some platforms
+        dust      # Avoid GitHub rate limits
+        grex      # Avoid GitHub rate limits
+        tokei     # Platform asset issues
+        tealdeer  # tlrc not in mise registry
+    )
 
-    if ! mkdir -p "$mise_config_dir"; then
-        echo "Error: failed to create directory $mise_config_dir"
-        return 1
-    fi
-
-    # Backup existing config (handle both files and symlinks)
-    if [[ -f "$mise_config" ]] || [[ -L "$mise_config" ]]; then
-        backup_file "$mise_config"
-        rm -f "$mise_config"
-    fi
-
-    # Copy config file
-    cp "$source_config" "$mise_config"
+    brew install -q "${deps[@]}"
+    echo "✓ Installed Homebrew packages"
 }
 
-# Uninstall tools migrated to mise
+# Uninstall Homebrew tools that have been migrated to mise
 cleanup_homebrew_tools() {
     if ! command -v brew >/dev/null 2>&1; then
         return 0
@@ -159,45 +211,31 @@ cleanup_homebrew_tools() {
         return 0
     fi
 
+    echo "→ Cleaning up Homebrew packages migrated to mise..."
+
     # List of packages to uninstall (migrated to mise)
-    local migrated=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh dust golangci-lint zig zls taplo goenv starship marksman grex zellij go-task procs)
+    # Keep in Homebrew: btop, dust, grex, tokei, tealdeer/tldr, gum
+    local migrated=(yq helix go rust fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq sd glow gh golangci-lint zig zls taplo goenv starship marksman zellij go-task procs)
 
     # Uninstall all packages at once (brew will skip packages that aren't installed)
     brew uninstall -q "${migrated[@]}" 2>/dev/null || true
+
+    echo "✓ Cleaned up Homebrew packages"
 }
 
-# Ensure dependencies are installed
-ensure_dependencies() {
-    # Check for Homebrew first
-    if ! command -v brew >/dev/null 2>&1; then
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Install language servers
+install_language_servers() {
+    echo "→ Installing language servers..."
 
-        # Add brew to PATH for this session
-        if [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        fi
-    fi
+    local lsp_servers=(
+        typescript-language-server
+        bash-language-server
+        yaml-language-server
+        vscode-langservers-extracted
+    )
 
-    # Install gum early for interactive setup
-    if ! command -v gum >/dev/null 2>&1; then
-        brew install -q gum
-    fi
-
-    # Install zsh and oh-my-zsh
-    install_zsh_and_omz
-
-    # Change default shell to zsh
-    change_shell_to_zsh
-
-    # Install mise
-    install_mise
-    # mise handles all other tools
-    mise install
-
-    # Install remaining Homebrew dependencies (system tools only)
-    local deps=(gnupg typescript-language-server bash-language-server yaml-language-server vscode-langservers-extracted)
-    brew install -q "${deps[@]}"
-
+    brew install -q "${lsp_servers[@]}"
+    echo "✓ Installed language servers"
 }
 
 # Interactive component selection
@@ -205,12 +243,15 @@ select_components() {
     # Skip if gum not available or non-interactive
     if ! command -v gum >/dev/null 2>&1 || [[ ! -t 0 ]]; then
         # Default: install everything
+        INSTALL_FONTS=true
         INSTALL_TERMINAL_SETTINGS=true
         INSTALL_EDITOR_CONFIGS=true
         INSTALL_GIT_CONFIG=true
         INSTALL_SECRETS=true
         INSTALL_SHELL_CONFIG=true
-        INSTALL_TOOLS=true
+        INSTALL_DATABASE_TOOLS=true
+        INSTALL_CLAUDE=true
+        INSTALL_LANGUAGE_SERVERS=true
         return 0
     fi
 
@@ -220,31 +261,38 @@ select_components() {
         "Select components to install:"
 
     local selected=$(gum choose --no-limit \
+        "Shell configuration (.zshrc)" \
         "Editor configs (Helix, Zellij)" \
+        "Language servers (TypeScript, Bash, YAML, etc.)" \
         "Fonts" \
         "Git configuration (GPG signing)" \
         "Secrets management (Cloudflare Worker)" \
         "Terminal settings (iTerm2, Windows Terminal)" \
-        "Tools")
+        "Database tools (usql)" \
+        "Claude CLI")
 
     # Parse selections
-    INSTALL_TOOLS=false
+    INSTALL_DATABASE_TOOLS=false
+    INSTALL_CLAUDE=false
     INSTALL_EDITOR_CONFIGS=false
     INSTALL_FONTS=false
     INSTALL_GIT_CONFIG=false
     INSTALL_SECRETS=false
     INSTALL_SHELL_CONFIG=false
     INSTALL_TERMINAL_SETTINGS=false
+    INSTALL_LANGUAGE_SERVERS=false
 
     while IFS= read -r item; do
         case "$item" in
             "Editor configs"*) INSTALL_EDITOR_CONFIGS=true ;;
+            "Language servers"*) INSTALL_LANGUAGE_SERVERS=true ;;
             "Fonts") INSTALL_FONTS=true ;;
             "Git configuration"*) INSTALL_GIT_CONFIG=true ;;
             "Secrets management"*) INSTALL_SECRETS=true ;;
             "Shell configuration"*) INSTALL_SHELL_CONFIG=true ;;
             "Terminal settings"*) INSTALL_TERMINAL_SETTINGS=true ;;
-            "Tools"*) INSTALL_TOOLS=true ;;
+            "Database tools"*) INSTALL_DATABASE_TOOLS=true ;;
+            "Claude CLI"*) INSTALL_CLAUDE=true ;;
         esac
     done <<< "$selected"
 }
@@ -354,31 +402,6 @@ try_restore_iterm() {
     echo "  Note: Restart iTerm2 for changes to take effect"
 }
 
-# Install Helix config
-install_helix_config() {
-    local config_source="$SCRIPT_DIR/configs/helix.toml"
-    local config_dest="$HOME/.config/helix/config.toml"
-
-    [[ -f "$config_source" ]] || { echo "✗ Error: $config_source not found"; return 1; }
-
-    mkdir -p "$(dirname "$config_dest")"
-    backup_file "$config_dest"
-    cp "$config_source" "$config_dest"
-}
-
-# Install Zellij config
-install_zellij_config() {
-    local config_source="$SCRIPT_DIR/configs/zellij.kdl"
-    local config_dest="$HOME/.config/zellij/config.kdl"
-
-    [[ -f "$config_source" ]] || { echo "✗ Error: $config_source not found"; return 1; }
-
-    mkdir -p "$(dirname "$config_dest")"
-    backup_file "$config_dest"
-    cp "$config_source" "$config_dest"
-    echo "✓ Installed Zellij config"
-}
-
 # Helper: Install Go tool via go install
 go_install() {
     local package="$1"
@@ -392,19 +415,19 @@ go_install() {
     fi
 }
 
-# Install Go tools with special requirements
-install_go_tools() {
+# Install database tools with special requirements
+install_database_tools() {
     if ! command -v go >/dev/null 2>&1; then
-        echo "⊘ Skipping Go tools (Go not installed)"
+        echo "⊘ Skipping database tools (Go not installed)"
         return 0
     fi
 
-    echo "→ Installing Go tools with special requirements..."
+    echo "→ Installing database tools..."
 
-    # usql requires build tags (not supported by mise go: backend yet)
+    # usql requires build tags (not supported by mise go: backend)
     go_install "github.com/xo/usql" "usql" "postgres sqlite3"
 
-    echo "✓ Installed Go tools"
+    echo "✓ Installed database tools"
 }
 
 # Install Claude CLI
@@ -501,13 +524,18 @@ configure_secrets() {
         return 0
     fi
 
-    # Create secrets config file directly in ~/.config/zsh.d/
-    mkdir -p "$ZSH_CONFIG_DIR"
-    local secrets_file="$ZSH_CONFIG_DIR/secrets.zsh"
+    # Create secrets config file
+    mkdir -p "$HOME/.config/zsh"
+    local secrets_file="$HOME/.config/zsh/secrets.zsh"
     cat > "$secrets_file" << EOF
 export SECRETS_URL="$url"
 export SECRETS_PASSPHRASE="$passphrase"
 EOF
+
+    # Source it from .zshrc if not already
+    if ! grep -qF "source \"\$HOME/.config/zsh/secrets.zsh\"" "$RC_FILE"; then
+        echo "[ -f \"\$HOME/.config/zsh/secrets.zsh\" ] && source \"\$HOME/.config/zsh/secrets.zsh\"" >> "$RC_FILE"
+    fi
 
     # Export for current session so setup_gpg_key can use them
     export SECRETS_URL="$url"
@@ -599,13 +627,8 @@ configure_git() {
     fi
 
     # Install global gitignore
-    local gitignore_source="$SCRIPT_DIR/configs/gitignore_global"
-    local gitignore_dest="$HOME/.gitignore_global"
-
-    if [[ -f "$gitignore_source" ]]; then
-        backup_file "$gitignore_dest"
-        cp "$gitignore_source" "$gitignore_dest"
-        git config --global core.excludesFile "$gitignore_dest"
+    if copy_config "gitignore_global" "~/.gitignore_global"; then
+        git config --global core.excludesFile "$HOME/.gitignore_global"
         echo "✓ Installed global gitignore"
     fi
 
@@ -614,12 +637,17 @@ configure_git() {
 
 # Main execution
 main() {
-    set -x
-
-    ensure_dependencies
+    # Install core dependencies in correct order
+    install_homebrew
+    install_and_configure_mise
+    install_homebrew_packages
     cleanup_homebrew_tools
-    install_mise_config
+
+    configure_zsh
+
     select_components
+
+    copy_config "tealdeer.toml" "~/.config/tealdeer/config.toml"
 
     [[ "$INSTALL_FONTS" == true ]] && try_install_fonts
 
@@ -629,8 +657,8 @@ main() {
     fi
 
     if [[ "$INSTALL_EDITOR_CONFIGS" == true ]]; then
-        install_helix_config
-        install_zellij_config
+        copy_config "helix.toml" "~/.config/helix/config.toml"
+        copy_config "zellij.kdl" "~/.config/zellij/config.kdl"
     fi
 
     [[ "$INSTALL_GIT_CONFIG" == true ]] && configure_git
@@ -641,16 +669,18 @@ main() {
         setup_gpg_key
     fi
 
-    # Shell configuration
-    if [[ "$INSTALL_SHELL_CONFIG" == true ]]; then
-        install_zsh_config
+    if [[ "$INSTALL_DATABASE_TOOLS" == true ]]; then
+        install_database_tools
     fi
 
-    # CLI tools installation
-    if [[ "$INSTALL_TOOLS" == true ]]; then
-        install_go_tools
+    if [[ "$INSTALL_CLAUDE" == true ]]; then
         install_claude_cli
         configure_claude_instructions
+    fi
+
+    # Language servers installation
+    if [[ "$INSTALL_LANGUAGE_SERVERS" == true ]]; then
+        install_language_servers
     fi
 
     gum style --border rounded --padding "1 1" --margin "1 1" --foreground 2 "✓ Setup complete!"

@@ -2,42 +2,48 @@
 # See: https://mise.jdx.dev/configuration.html
 
 [tools]
-# Core languages & runtimes
+# Core languages & runtimes (installed first)
 bun = "latest"
 go = "latest"
+rust = "latest"  # Needed for cargo: packages
 zig = "latest"
 
 # CLI utilities
+# NOTE: These use aqua backend which hits GitHub API rate limits (60/hour unauthenticated)
+# Set GITHUB_TOKEN environment variable for higher limits (5000/hour)
+# Or wait an hour if you hit rate limit during testing
 bat = "latest"
-# btop = "latest"  # Keep in Homebrew - not available for macOS arm64 via mise
-delta = "latest"  # git-delta
-dust = "latest"
+delta = "latest"
 eza = "latest"
 fd = "latest"
 fzf = "latest"
 gh = "latest"
 glow = "latest"
-grex = "latest"
-# gum = "latest"   # Keep in Homebrew - needed early for interactive setup
 jq = "latest"
 ripgrep = "latest"
 sd = "latest"
 starship = "latest"
-tlrc = "latest"
-# tokei = "latest"  # Keep in Homebrew - asset not found for macOS
 yq = "latest"
 zellij = "latest"
 zoxide = "latest"
+
+# Keep in Homebrew (platform issues or needed early):
+# btop - not available for macOS arm64 via mise
+# dust - kept in Homebrew for simplicity
+# grex - kept in Homebrew for simplicity
+# gum - needed early for interactive setup
+# tokei - asset not found for macOS
+# tealdeer (tldr) - not in mise registry
 
 # Development tools
 ast-grep = "latest"
 helix = "latest"
 golangci-lint = "latest"
-marksman = "latest"  # Markdown LSP
-taplo = "latest"     # TOML toolkit
-zls = "latest"       # Zig LSP
+marksman = "latest"
+taplo = "latest"
+zls = "latest"
 
-# Go tools via go: backend
+# Go development tools via go: backend
 "go:github.com/air-verse/air" = "latest"
 "go:github.com/segmentio/golines" = "latest"
 "go:mvdan.cc/gofumpt" = "latest"
@@ -46,8 +52,8 @@ zls = "latest"       # Zig LSP
 "go:github.com/go-delve/delve/cmd/dlv" = "latest"
 "go:github.com/docker/docker-language-server/cmd/docker-language-server" = "latest"
 
-# usql with build tags (requires special handling - see note below)
-# "go:github.com/xo/usql" = "latest"  # TODO: Add build tags support
+# Database tools (installed via install_database_tools when INSTALL_TOOLS=true):
+# - usql (requires build tags for postgres/sqlite3, not supported by mise go: backend)
 
 [env]
 # mise can set environment variables (replaces direnv functionality)

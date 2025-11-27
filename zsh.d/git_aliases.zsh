@@ -1,6 +1,0 @@
-alias gst='git status'
-alias gc='git commit'
-alias gl='git log'
-alias gd='git diff'
-alias gds='git diff --staged'
-alias ga='git add'
