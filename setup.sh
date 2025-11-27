@@ -1,89 +1,54 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Detect user's login shell
-detect_shell() {
-    local shell_path=""
-
-    # Try to get login shell from system passwd database
-    if [[ "$(uname)" == "Darwin" ]]; then
-        # macOS: use dscl
-        shell_path=$(dscl . -read ~/ UserShell 2>/dev/null | awk '{print $2}')
-    else
-        # Linux/WSL: use getent
-        shell_path=$(getent passwd "$USER" 2>/dev/null | cut -d: -f7)
-    fi
-
-    # Fallback to $SHELL environment variable
-    if [[ -z "$shell_path" ]]; then
-        shell_path="$SHELL"
-    fi
-
-    # Extract shell name and normalize
-    case "$(basename "$shell_path")" in
-        zsh)
-            echo "zsh"
-            ;;
-        bash)
-            echo "bash"
-            ;;
-        *)
-            # Check which rc file exists as final fallback
-            if [[ -f "$HOME/.zshrc" ]]; then
-                echo "zsh"
-            elif [[ -f "$HOME/.bashrc" ]]; then
-                echo "bash"
-            else
-                # Ultimate fallback to bash
-                echo "bash"
-            fi
-            ;;
-    esac
-}
-
-SHELL_TYPE=$(detect_shell)
-RC_FILE="$HOME/.${SHELL_TYPE}rc"
+# Hard-code to zsh (installed by setup if not present)
+RC_FILE="$HOME/.zshrc"
+ZSH_CONFIG_DIR="$HOME/.config/zsh.d"
 
 # Get script directory (works in both bash and zsh)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
 
-# Helper: Initialize snippet section (called once at start)
-init_snippets() {
+# Install zsh configuration files
+install_zsh_config() {
+    # Ensure .zshrc exists
     touch "$RC_FILE"
 
-    # Remove old snippets section if exists
+    # Remove old marker-based snippets if they exist
     if grep -qF "# dotfiles-snippets-start" "$RC_FILE"; then
         sed -i.bak "/# dotfiles-snippets-start/,/# dotfiles-snippets-end/d" "$RC_FILE"
         rm -f "$RC_FILE.bak"
+        echo "✓ Removed old marker-based snippets"
     fi
 
-    # Add snippets start marker
-    echo "# dotfiles-snippets-start" >> "$RC_FILE"
-}
+    # Check if .zshrc already sources the config directory
+    if ! grep -qF "# Source all config files from ~/.config/zsh.d/" "$RC_FILE"; then
+        cat >> "$RC_FILE" << 'EOF'
 
-# Helper: Finalize snippet section (called once at end)
-finalize_snippets() {
-    echo "# dotfiles-snippets-end" >> "$RC_FILE"
-}
+# Source all config files from ~/.config/zsh.d/
+if [[ -d "$HOME/.config/zsh.d" ]]; then
+    for config in "$HOME/.config/zsh.d"/*.zsh(N); do
+        source "$config"
+    done
+fi
+EOF
+        echo "✓ Configured .zshrc to source ~/.config/zsh.d/"
+    fi
 
-# Helper: Add snippet (no individual deletion needed)
-add_snippet() {
-    local snippet_name="$1"
-    local description="$2"
-    local snippet_file="$SCRIPT_DIR/snippets/${snippet_name}.sh"
+    local zshd="$HOME/.config/zsh.d"
 
-    # Check if snippet file exists
-    [[ -f "$snippet_file" ]] || { echo "✗ Error: $snippet_file not found"; return 1; }
-
-    # Add snippet with delimiters, substituting SHELL_TYPE placeholder
-    {
-        echo "# snippet:${snippet_name}.sh"
-        sed "s/SHELL_TYPE/${SHELL_TYPE}/g" "$snippet_file"
-        echo "# end:${snippet_name}.sh"
-        echo ""
-    } >> "$RC_FILE"
-
-    echo "✓ Configured $description"
+    # Copy entire zsh.d directory to ~/.config/
+    if [[ -d "$SCRIPT_DIR/zsh.d" ]]; then
+        mkdir -p "$HOME/.config"
+        if gum confirm "rm -fr $zshd"; then
+            echo "rm -fr $zshd"
+            rm -fr "$zshd"
+        fi
+        cp -r "$SCRIPT_DIR/zsh.d" "$HOME/.config/"
+        echo "✓ Copied zsh configuration files to ~/.config/zsh.d/"
+    else
+        echo "✗ Error: $SCRIPT_DIR/zsh.d not found"
+        return 1
+    fi
 }
 
 # Helper: Create .bak backup of a file (only if backup doesn't already exist)
@@ -95,14 +60,62 @@ backup_file() {
     return 0
 }
 
+# Install zsh and oh-my-zsh
+install_zsh_and_omz() {
+    # Install zsh if not present
+    if ! command -v zsh >/dev/null 2>&1; then
+        echo "→ Installing zsh..."
+        if command -v brew >/dev/null 2>&1; then
+            brew install -q zsh
+        elif command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get install -y zsh
+        elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y zsh
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S --noconfirm zsh
+        else
+            echo "✗ Error: Cannot install zsh (unsupported package manager)"
+            exit 1
+        fi
+        echo "✓ Installed zsh"
+    fi
+
+    # Install oh-my-zsh (handles zsh configuration)
+    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+        echo "→ Installing oh-my-zsh..."
+        # Use unattended installation
+        RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        echo "✓ Installed oh-my-zsh"
+    fi
+}
+
+# Change default shell to zsh
+change_shell_to_zsh() {
+    local current_shell=$(basename "$SHELL")
+
+    if [[ "$current_shell" != "zsh" ]]; then
+        echo "→ Changing default shell to zsh..."
+
+        local zsh_path=$(command -v zsh)
+
+        # Add zsh to /etc/shells if not present
+        if ! grep -qF "$zsh_path" /etc/shells 2>/dev/null; then
+            echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
+        fi
+
+        # Change shell (requires password)
+        chsh -s "$zsh_path"
+        echo "✓ Changed default shell to zsh"
+        echo "  Note: Log out and back in (or run 'exec zsh') for change to take effect"
+    fi
+}
+
 # Install mise
 install_mise() {
     if command -v mise >/dev/null 2>&1; then
-        echo "✓ mise (already installed)"
         return 0
     fi
 
-    echo "→ Installing mise..."
     curl https://mise.jdx.dev/install.sh | sh
 
     # Add to PATH for current session
@@ -110,91 +123,81 @@ install_mise() {
 
     # Activate mise for current session
     eval "$(mise activate bash)"
-
-    echo "✓ Installed mise"
 }
 
 # Install global mise configuration
 install_mise_config() {
     local mise_config_dir="$HOME/.config/mise"
     local mise_config="$mise_config_dir/config.toml"
-    local source_config="$SCRIPT_DIR/.mise.toml"
+    local source_config="$SCRIPT_DIR/configs/mise.toml"
 
     [[ -f "$source_config" ]] || { echo "✗ Error: $source_config not found"; return 1; }
 
-    mkdir -p "$mise_config_dir"
-
-    # Backup existing config if not a symlink
-    if [[ -f "$mise_config" ]] && [[ ! -L "$mise_config" ]]; then
-        backup_file "$mise_config"
+    if ! mkdir -p "$mise_config_dir"; then
+        echo "Error: failed to create directory $mise_config_dir"
+        return 1
     fi
 
-    # Remove existing symlink or file
-    rm -f "$mise_config"
+    # Backup existing config (handle both files and symlinks)
+    if [[ -f "$mise_config" ]] || [[ -L "$mise_config" ]]; then
+        backup_file "$mise_config"
+        rm -f "$mise_config"
+    fi
 
-    # Create symlink
-    ln -s "$source_config" "$mise_config"
-    echo "✓ Installed global mise configuration"
+    # Copy config file
+    cp "$source_config" "$mise_config"
 }
 
 # Uninstall tools migrated to mise
 cleanup_homebrew_tools() {
     if ! command -v brew >/dev/null 2>&1; then
-        echo "⊘ Skipping Homebrew cleanup (brew not installed)"
         return 0
     fi
 
     # Only proceed if mise is working
     if ! command -v mise >/dev/null 2>&1; then
-        echo "⊘ Skipping Homebrew cleanup (mise not installed)"
         return 0
     fi
-
-    echo "→ Cleaning up Homebrew packages (migrated to mise)..."
 
     # List of packages to uninstall (migrated to mise)
     local migrated=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh dust golangci-lint zig zls taplo goenv starship marksman grex zellij go-task procs)
 
     # Uninstall all packages at once (brew will skip packages that aren't installed)
     brew uninstall -q "${migrated[@]}" 2>/dev/null || true
-
-    echo "✓ Cleaned up Homebrew packages"
-    echo "  Note: Some packages may remain if other tools depend on them"
 }
 
 # Ensure dependencies are installed
 ensure_dependencies() {
     # Check for Homebrew first
     if ! command -v brew >/dev/null 2>&1; then
-        echo "→ Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
         # Add brew to PATH for this session
         if [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
             eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         fi
-        echo "✓ Installed Homebrew"
     fi
 
     # Install gum early for interactive setup
     if ! command -v gum >/dev/null 2>&1; then
-        echo "→ Installing gum (for interactive setup)..."
         brew install -q gum
-        echo "✓ Installed gum"
     fi
+
+    # Install zsh and oh-my-zsh
+    install_zsh_and_omz
+
+    # Change default shell to zsh
+    change_shell_to_zsh
 
     # Install mise
     install_mise
+    # mise handles all other tools
+    mise install
 
     # Install remaining Homebrew dependencies (system tools only)
     local deps=(gnupg typescript-language-server bash-language-server yaml-language-server vscode-langservers-extracted)
-
     brew install -q "${deps[@]}"
 
-    # mise handles all other tools
-    echo "→ Installing mise tools..."
-    mise install
-    echo "✓ Installed mise tools"
 }
 
 # Interactive component selection
@@ -202,63 +205,48 @@ select_components() {
     # Skip if gum not available or non-interactive
     if ! command -v gum >/dev/null 2>&1 || [[ ! -t 0 ]]; then
         # Default: install everything
-        INSTALL_FONTS=true
         INSTALL_TERMINAL_SETTINGS=true
         INSTALL_EDITOR_CONFIGS=true
         INSTALL_GIT_CONFIG=true
         INSTALL_SECRETS=true
         INSTALL_SHELL_CONFIG=true
-        INSTALL_CLI_TOOLS=true
+        INSTALL_TOOLS=true
         return 0
     fi
 
-    gum style --border double --padding "1 2" --margin "1 0" \
+    gum style --border rounded --padding "1 1" --margin "1 1" \
         "Dotfiles Setup" \
         "" \
         "Select components to install:"
 
     local selected=$(gum choose --no-limit \
+        "Editor configs (Helix, Zellij)" \
         "Fonts" \
-        "Terminal settings (iTerm2/Windows Terminal)" \
-        "Editor configs (Helix/Zellij)" \
-        "Git configuration" \
-        "Secrets management" \
-        "Shell configuration (.bashrc/.zshrc)" \
-        "CLI tools (Go tools, Claude CLI)")
+        "Git configuration (GPG signing)" \
+        "Secrets management (Cloudflare Worker)" \
+        "Terminal settings (iTerm2, Windows Terminal)" \
+        "Tools")
 
     # Parse selections
-    INSTALL_FONTS=false
-    INSTALL_TERMINAL_SETTINGS=false
+    INSTALL_TOOLS=false
     INSTALL_EDITOR_CONFIGS=false
+    INSTALL_FONTS=false
     INSTALL_GIT_CONFIG=false
     INSTALL_SECRETS=false
     INSTALL_SHELL_CONFIG=false
-    INSTALL_CLI_TOOLS=false
+    INSTALL_TERMINAL_SETTINGS=false
 
     while IFS= read -r item; do
         case "$item" in
-            "Fonts") INSTALL_FONTS=true ;;
-            "Terminal settings"*) INSTALL_TERMINAL_SETTINGS=true ;;
             "Editor configs"*) INSTALL_EDITOR_CONFIGS=true ;;
-            "Git configuration") INSTALL_GIT_CONFIG=true ;;
-            "Secrets management") INSTALL_SECRETS=true ;;
+            "Fonts") INSTALL_FONTS=true ;;
+            "Git configuration"*) INSTALL_GIT_CONFIG=true ;;
+            "Secrets management"*) INSTALL_SECRETS=true ;;
             "Shell configuration"*) INSTALL_SHELL_CONFIG=true ;;
-            "CLI tools"*) INSTALL_CLI_TOOLS=true ;;
+            "Terminal settings"*) INSTALL_TERMINAL_SETTINGS=true ;;
+            "Tools"*) INSTALL_TOOLS=true ;;
         esac
     done <<< "$selected"
-}
-
-# Install bun
-install_bun() {
-    # mise handles bun installation
-    if command -v mise >/dev/null 2>&1; then
-        echo "✓ bun (installed via mise)"
-        return 0
-    fi
-
-    # Fallback: direct installation if mise not available
-    command -v bun >/dev/null 2>&1 && return 0
-    curl -fsSL https://bun.sh/install | bash
 }
 
 # Check if running on macOS
@@ -285,7 +273,6 @@ try_install_fonts() {
 
     # Skip if fonts directory doesn't exist or is empty
     if [[ ! -d "$fonts_dir" ]] || [[ -z "$(ls -A "$fonts_dir" 2>/dev/null)" ]]; then
-        echo "⊘ Skipping fonts (no fonts to install)"
         return 0
     fi
 
@@ -309,18 +296,13 @@ try_install_fonts() {
 
         if [[ $font_count -gt 0 ]]; then
             echo "✓ Installed $font_count fonts (macOS)"
-        else
-            echo "⊘ No fonts found to install"
         fi
-    else
-        echo "⊘ Skipping fonts (unsupported platform)"
     fi
 }
 
 # Apply Windows Terminal settings
 try_restore_winterm() {
     if ! is_wsl; then
-        echo "⊘ Skipping Windows Terminal (not WSL)"
         return 0
     fi
 
@@ -382,7 +364,6 @@ install_helix_config() {
     mkdir -p "$(dirname "$config_dest")"
     backup_file "$config_dest"
     cp "$config_source" "$config_dest"
-    echo "✓ Installed Helix config"
 }
 
 # Install Zellij config
@@ -448,7 +429,7 @@ configure_claude_instructions() {
     fi
 
     local claude_file="$HOME/.claude/CLAUDE.md"
-    local source_file="$SCRIPT_DIR/CLAUDE.md"
+    local source_file="$SCRIPT_DIR/configs/CLAUDE.md"
 
     [[ -f "$source_file" ]] || { echo "✗ Error: $source_file not found"; return 1; }
 
@@ -497,7 +478,6 @@ install_secrets_cli() {
 configure_secrets() {
     # Skip if already configured via environment
     if [[ -n "${SECRETS_URL:-}" ]] && [[ -n "${SECRETS_PASSPHRASE:-}" ]]; then
-        echo "⊘ Secrets already configured via environment"
         return 0
     fi
 
@@ -508,7 +488,7 @@ configure_secrets() {
     echo "  2. Your passphrase for authentication"
     echo ""
     read -p "Enter your secrets worker URL (or press Enter to skip): " url
-
+    
     if [[ -z "$url" ]]; then
         echo "⊘ Skipping secrets configuration"
         return 0
@@ -521,9 +501,10 @@ configure_secrets() {
         return 0
     fi
 
-    # Create secrets snippet with actual values
-    local secrets_snippet="$SCRIPT_DIR/snippets/secrets.sh"
-    cat > "$secrets_snippet" << EOF
+    # Create secrets config file directly in ~/.config/zsh.d/
+    mkdir -p "$ZSH_CONFIG_DIR"
+    local secrets_file="$ZSH_CONFIG_DIR/secrets.zsh"
+    cat > "$secrets_file" << EOF
 export SECRETS_URL="$url"
 export SECRETS_PASSPHRASE="$passphrase"
 EOF
@@ -537,14 +518,8 @@ EOF
 
 # Setup GPG key for commit signing
 setup_gpg_key() {
-    if [[ "${SKIP_SECRETS_PULL:-}" == "true" ]]; then
-        echo "⊘ Skipping secrets pull (SKIP_SECRETS_PULL=true)"
-        return 0
-    fi
-
     # Check if GPG key is already imported
     if gpg --list-keys 7B5FC82E53B5ABE6 >/dev/null 2>&1; then
-        echo "✓ GPG key already imported"
         return 0
     fi
 
@@ -559,17 +534,10 @@ setup_gpg_key() {
         return 0
     fi
 
-    echo "→ Pulling secrets from worker..."
     if secrets pull 2>/dev/null; then
-        echo "✓ Pulled secrets from worker"
-
         if [[ -f "$HOME/.ssh/gpg" ]]; then
-            echo "→ Importing GPG key..."
             if gpg --import "$HOME/.ssh/gpg" 2>/dev/null; then
-                echo "✓ Imported GPG key to keychain"
-
                 # Set ultimate trust for the imported key
-                echo "→ Setting key trust level..."
                 echo -e "5\ny\n" | gpg --command-fd 0 --expert --edit-key 7B5FC82E53B5ABE6 trust quit 2>/dev/null && \
                     echo "✓ Key trusted for signing" || \
                     echo "⊘ Key trust may already be set"
@@ -594,9 +562,10 @@ configure_git() {
     git config --global pull.rebase false
     git config --global commit.gpgsign true
 
-    # Use Helix as editor
-    git config --global core.editor "hx"
-    git config --global sequence.editor "hx"
+    if command -v hx >/dev/null 2>&1; then
+        git config --global core.editor "hx"
+        git config --global sequence.editor "hx"
+    fi
 
     # Git aliases
     git config --global alias.st status
@@ -630,7 +599,7 @@ configure_git() {
     fi
 
     # Install global gitignore
-    local gitignore_source="$SCRIPT_DIR/.gitignore_global"
+    local gitignore_source="$SCRIPT_DIR/configs/gitignore_global"
     local gitignore_dest="$HOME/.gitignore_global"
 
     if [[ -f "$gitignore_source" ]]; then
@@ -645,21 +614,13 @@ configure_git() {
 
 # Main execution
 main() {
-    # Ensure dependencies are installed first
+    set -x
+
     ensure_dependencies
-
-    # Install global mise configuration
-    install_mise_config
-
-    # Cleanup Homebrew packages migrated to mise
     cleanup_homebrew_tools
-
-    install_bun
-
-    # Interactive component selection
+    install_mise_config
     select_components
 
-    # Run configurations based on selections
     [[ "$INSTALL_FONTS" == true ]] && try_install_fonts
 
     if [[ "$INSTALL_TERMINAL_SETTINGS" == true ]]; then
@@ -674,66 +635,29 @@ main() {
 
     [[ "$INSTALL_GIT_CONFIG" == true ]] && configure_git
 
-    [[ "$INSTALL_SECRETS" == true ]] && configure_secrets
+    if [[ "$INSTALL_SECRETS" == true ]]; then
+        configure_secrets
+        install_secrets_cli
+        setup_gpg_key
+    fi
 
     # Shell configuration
     if [[ "$INSTALL_SHELL_CONFIG" == true ]]; then
-        # Initialize snippet section
-        init_snippets
-
-        # Add mise snippet FIRST (must load before tools)
-        add_snippet "mise" "mise (tool version manager)"
-
-        # Add all snippets
-        add_snippet "fzf" "fzf"
-        add_snippet "zoxide" "zoxide"
-        add_snippet "gopath" "GOPATH"
-        add_snippet "bun" "bun"
-        add_snippet "local_bin" "~/.local/bin in PATH"
-        add_snippet "starship" "Starship prompt"
-        add_snippet "eza_aliases" "eza aliases"
-        add_snippet "git_aliases" "git aliases"
-        add_snippet "fzf_git" "fzf + git integration"
-        add_snippet "dev" "development utilities"
-        add_snippet "xdg" "XDG directories"
-        add_snippet "qol" "shell quality of life"
-
-        # Add secrets snippet only if it was created
-        local secrets_snippet="$SCRIPT_DIR/snippets/secrets.sh"
-        if [[ -f "$secrets_snippet" ]]; then
-            add_snippet "secrets" "secrets configuration"
-            # Delete secrets snippet file after it's been added (contains sensitive data)
-            rm -f "$secrets_snippet"
-        fi
-
-        # Shell-specific snippets
-        if [ "$SHELL_TYPE" = "zsh" ]; then
-            [[ "$(uname)" = "Darwin" ]] && add_snippet "macos_bindkeys" "macOS bindkeys"
-            add_snippet "zsh_dirstack" "zsh features"
-            add_snippet "zsh_qol" "zsh history config"
-        else
-            add_snippet "bash_qol" "bash history config"
-        fi
-
-        add_snippet "bootstrap" "bootstrap alias"
-
-        # Finalize snippet section
-        finalize_snippets
+        install_zsh_config
     fi
 
     # CLI tools installation
-    if [[ "$INSTALL_CLI_TOOLS" == true ]]; then
+    if [[ "$INSTALL_TOOLS" == true ]]; then
         install_go_tools
         install_claude_cli
         configure_claude_instructions
-        [[ "$INSTALL_SECRETS" == true ]] && install_secrets_cli
-        [[ "$INSTALL_SECRETS" == true ]] && setup_gpg_key
     fi
 
-    echo ""
-    gum style --border rounded --padding "1 2" --foreground 2 "✓ Setup complete!"
-    echo ""
-    [[ "$INSTALL_SHELL_CONFIG" == true ]] && echo "Run: source ~/.${SHELL_TYPE}rc"
+    gum style --border rounded --padding "1 1" --margin "1 1" --foreground 2 "✓ Setup complete!"
+
+    if [[ "$INSTALL_SHELL_CONFIG" == true ]]; then
+        echo "Run: exec zsh   # Or log out and back in"
+    fi
 }
 
 main

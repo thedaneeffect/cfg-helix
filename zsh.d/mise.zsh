@@ -1,16 +1,8 @@
 # mise - unified tool version management
-# Replaces: goenv, direnv (partially), task
 
 # mise activation
-eval "$(mise activate bash 2>/dev/null || mise activate zsh 2>/dev/null)"
-
-# Optional: mise completions
-# Detect shell type for completions
-if [ -n "$BASH_VERSION" ]; then
-    eval "$(mise completion bash)"
-elif [ -n "$ZSH_VERSION" ]; then
-    eval "$(mise completion zsh)"
-fi
+eval "$(mise activate zsh 2>/dev/null)"
+eval "$(mise completion zsh)"
 
 # Aliases for convenience
 alias mi='mise'
