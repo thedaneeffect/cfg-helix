@@ -61,9 +61,6 @@ This system has modern CLI tools installed. Use these when executing commands:
 - **tldr**: Simplified man pages with examples
   - Example: `tldr tar` for practical examples instead of full man page
 
-- **task**: Task runner available (Taskfile-based)
-  - Use `task --list` to see available tasks
-
 - **git**: Pre-configured with useful aliases
   - Basic: `git st` (status), `git co` (checkout), `git br` (branch), `git lg` (graph log)
   - Commit: `git cm` (commit -m), `git amend` (amend without edit)
@@ -73,13 +70,21 @@ This system has modern CLI tools installed. Use these when executing commands:
   - Utilities: `ports` (show listening ports), `myip` (get public IP)
 
 - **go**: Go toolchain installed with GOPATH configured
-  - **goenv**: Go version manager for switching between Go versions
+  - **mise**: Unified tool version manager (replaces goenv)
   - **air**: Live reload for Go development (`air` to watch and reload)
 
 - **bun**: Fast JavaScript runtime and package manager
   - Modern alternative to npm/yarn/node
   - Example: `bun install`, `bun run dev`, `bun test`
   - Generally faster than npm for package management
+
+- **mise**: Unified tool version manager
+  - Replaces goenv, manages all development tools
+  - Example: `mise install` to install all tools
+  - Example: `mise upgrade --bump` to update tools
+  - Example: `mise use go@1.23` to switch Go versions
+  - Example: `mise run <task>` to run tasks (replaces task runner)
+  - All tool versions defined in `.mise.toml`
 
 ## Environment & Development
 
@@ -112,7 +117,9 @@ This system has modern CLI tools installed. Use these when executing commands:
 - Use gh for GitHub operations
 - Use usql for database queries across different database types
 - Use tldr for quick command examples instead of man pages
-- Use task for running project tasks when Taskfile exists
+- Use mise for tool version management (replaces goenv, task runner)
+- Use `mise run <task>` for running project tasks (see .mise.toml tasks section)
 - Use air for Go live reload development
 - Git shortcuts are available and preferred
 - Be aware that direnv is active - .envrc files affect environment automatically
+- Prefer mise over manual tool installation - check `.mise.toml` for available tools

@@ -27,13 +27,69 @@ Setup prompts for optional secrets storage configuration (Cloudflare Worker URL 
 | **Starship** | Cross-shell prompt with git integration |
 | **Claude CLI** | AI assistant for command line |
 | **Secrets CLI** | AES-256 encrypted secrets sync via Cloudflare Workers |
-| **Modern Tools** | ripgrep, fd, bat, eza, delta, jq, sd, glow, tokei, gh, procs, dust, btop, tldr, grex, yq |
-| **Development** | Go, Zig, goenv, air, bun, direnv, task |
+| **Modern Tools** | ripgrep, fd, bat, eza, delta, jq, sd, glow, tokei, gh, dust, btop, tldr, grex, yq |
+| **Development** | Go, Zig, air, bun, direnv |
 | **Language Servers** | gopls, typescript-language-server, bash-language-server, zls, yaml-language-server, marksman, taplo |
 
 Automatically configures git, GPG signing, shell aliases, and syncs settings across machines.
 
+## Tool Management
+
+This repository uses [mise](https://mise.jdx.dev/) for unified tool version management.
+
+### Installation
+
+mise is automatically installed by `setup.sh`. To install manually:
+
+```bash
+curl https://mise.jdx.dev/install.sh | sh
+```
+
+### Usage
+
+All tools and versions are defined in `.mise.toml`. To install all tools:
+
+```bash
+mise install
+```
+
+To update all tools to their latest versions:
+
+```bash
+mise upgrade --bump
+```
+
+To check for outdated tools:
+
+```bash
+mise outdated
+```
+
+### Tool Versions
+
+Most tools are pinned to `latest` for automatic updates. To pin a specific version, edit `.mise.toml`:
+
+```toml
+[tools]
+go = "1.23.3"  # Pin specific version
+bun = "latest"  # Always use latest
+```
+
+### Per-Project Tool Versions
+
+mise supports per-project tool versions. In any project, create a `.mise.toml`:
+
+```toml
+[tools]
+go = "1.21.0"  # Project-specific Go version
+node = "20.0.0"
+```
+
+mise will automatically activate these versions when you enter the directory.
+
 ## Modern CLI Tools
+
+All tools are installed and managed via mise (see `.mise.toml` for complete list).
 
 | Tool | Replaces | Purpose |
 |------|----------|---------|
@@ -44,7 +100,6 @@ Automatically configures git, GPG signing, shell aliases, and syncs settings acr
 | **eza** | ls | Colors and git status |
 | **delta** | diff | Beautiful git diffs |
 | **sd** | sed | Simple find and replace |
-| **procs** | ps | Process viewer |
 | **dust** | du | Disk usage tree |
 | **btop** | top/htop | System monitor |
 | **zoxide** | cd | Smart directory jumping |

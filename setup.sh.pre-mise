@@ -87,69 +87,8 @@ backup_file() {
     return 0
 }
 
-# Install mise
-install_mise() {
-    if command -v mise >/dev/null 2>&1; then
-        echo "✓ mise (already installed)"
-        return 0
-    fi
-
-    echo "→ Installing mise..."
-    curl https://mise.jdx.dev/install.sh | sh
-
-    # Add to PATH for current session
-    export PATH="$HOME/.local/bin:$PATH"
-
-    # Activate mise for current session
-    eval "$(mise activate bash)"
-
-    echo "✓ Installed mise"
-}
-
-# Uninstall tools migrated to mise
-cleanup_homebrew_tools() {
-    if ! command -v brew >/dev/null 2>&1; then
-        echo "⊘ Skipping Homebrew cleanup (brew not installed)"
-        return 0
-    fi
-
-    # Only proceed if mise is working
-    if ! command -v mise >/dev/null 2>&1; then
-        echo "⊘ Skipping Homebrew cleanup (mise not installed)"
-        return 0
-    fi
-
-    echo "→ Cleaning up Homebrew packages (migrated to mise)..."
-
-    # List of packages to uninstall (migrated to mise)
-    local migrated=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh dust golangci-lint zig zls taplo goenv starship marksman grex zellij)
-
-    # Uninstall each package if installed
-    for pkg in "${migrated[@]}"; do
-        if brew list "$pkg" &>/dev/null; then
-            brew uninstall "$pkg" -q || echo "  ⊘ Could not uninstall $pkg (may have dependents)"
-        fi
-    done
-
-    # Uninstall go-task from tap
-    if brew list go-task &>/dev/null; then
-        brew uninstall go-task -q || echo "  ⊘ Could not uninstall go-task"
-    fi
-
-    # Uninstall procs if present (not in mise, but was in original deps)
-    if brew list procs &>/dev/null; then
-        brew uninstall procs -q || echo "  ⊘ Could not uninstall procs"
-    fi
-
-    echo "✓ Cleaned up Homebrew packages"
-    echo "  Note: Some packages may remain if other tools depend on them"
-}
-
 # Ensure dependencies are installed
 ensure_dependencies() {
-    # Install mise first
-    install_mise
-
     # Check for Homebrew
     if ! command -v brew >/dev/null 2>&1; then
         echo "→ Installing Homebrew..."
@@ -162,26 +101,15 @@ ensure_dependencies() {
         echo "✓ Installed Homebrew"
     fi
 
-    # Install remaining Homebrew dependencies (system tools only)
-    local deps=(gnupg typescript-language-server bash-language-server yaml-language-server vscode-langservers-extracted)
+    # Install dependencies (brew skips already installed packages)
+    local deps=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh procs dust typescript-language-server bash-language-server golangci-lint zig zls taplo yaml-language-server goenv starship marksman vscode-langservers-extracted grex zellij gnupg)
 
     brew install -q "${deps[@]}"
-
-    # mise handles all other tools
-    echo "→ Installing mise tools..."
-    mise install
-    echo "✓ Installed mise tools"
+    brew install -q go-task/tap/go-task
 }
 
 # Install bun
 install_bun() {
-    # mise handles bun installation
-    if command -v mise >/dev/null 2>&1; then
-        echo "✓ bun (installed via mise)"
-        return 0
-    fi
-
-    # Fallback: direct installation if mise not available
     command -v bun >/dev/null 2>&1 && return 0
     curl -fsSL https://bun.sh/install | bash
 }
@@ -336,19 +264,23 @@ go_install() {
     fi
 }
 
-# Install Go tools with special requirements
+# Install Go tools
 install_go_tools() {
     if ! command -v go >/dev/null 2>&1; then
         echo "⊘ Skipping Go tools (Go not installed)"
         return 0
     fi
 
-    echo "→ Installing Go tools with special requirements..."
+    echo "→ Installing Go tools..."
 
-    # usql requires build tags (not supported by mise go: backend yet)
+    go_install "golang.org/x/tools/gopls" "gopls"
+    go_install "github.com/nametake/golangci-lint-langserver" "golangci-lint-langserver"
+    go_install "github.com/segmentio/golines" "golines"
+    go_install "mvdan.cc/gofumpt" "gofumpt"
+    go_install "github.com/go-delve/delve/cmd/dlv" "delve"
+    go_install "github.com/air-verse/air" "air"
     go_install "github.com/xo/usql" "usql" "postgres sqlite3"
-
-    echo "✓ Installed Go tools"
+    go_install "github.com/docker/docker-language-server/cmd/docker-language-server" "docker-language-server"
 }
 
 # Install Claude CLI
@@ -572,10 +504,6 @@ configure_git() {
 main() {
     # Ensure dependencies are installed first
     ensure_dependencies
-
-    # Cleanup Homebrew packages migrated to mise
-    cleanup_homebrew_tools
-
     install_bun
 
     # Run all configurations
@@ -590,16 +518,13 @@ main() {
     # Initialize snippet section
     init_snippets
 
-    # Add mise snippet FIRST (must load before tools)
-    add_snippet "mise" "mise (tool version manager)"
-
     # Add all snippets
     add_snippet "fzf" "fzf"
     add_snippet "zoxide" "zoxide"
-    # REMOVED: add_snippet "direnv" "direnv"
-    # REMOVED: add_snippet "goenv" "goenv"
+    add_snippet "direnv" "direnv"
+    add_snippet "goenv" "goenv"
     add_snippet "gopath" "GOPATH"
-    # REMOVED: add_snippet "task" "task completion"
+    add_snippet "task" "task completion"
     add_snippet "bun" "bun"
     add_snippet "local_bin" "~/.local/bin in PATH"
     add_snippet "starship" "Starship prompt"

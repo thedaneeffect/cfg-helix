@@ -1,0 +1,92 @@
+# mise configuration for dotfiles repository
+# See: https://mise.jdx.dev/configuration.html
+
+[tools]
+# Core languages & runtimes
+bun = "latest"
+go = "latest"
+zig = "latest"
+
+# CLI utilities
+bat = "latest"
+# btop = "latest"  # Keep in Homebrew - not available for macOS arm64 via mise
+delta = "latest"  # git-delta
+dust = "latest"
+eza = "latest"
+fd = "latest"
+fzf = "latest"
+gh = "latest"
+glow = "latest"
+grex = "latest"
+jq = "latest"
+ripgrep = "latest"
+sd = "latest"
+starship = "latest"
+# tldr = "latest"  # Keep in Homebrew - not in mise registry
+# tokei = "latest"  # Keep in Homebrew - asset not found for macOS
+yq = "latest"
+zellij = "latest"
+zoxide = "latest"
+
+# Development tools
+ast-grep = "latest"
+helix = "latest"
+golangci-lint = "latest"
+marksman = "latest"  # Markdown LSP
+taplo = "latest"     # TOML toolkit
+zls = "latest"       # Zig LSP
+
+# Environment management (mise can activate direnv or replace it)
+direnv = "latest"
+
+# Go tools via go: backend
+"go:github.com/air-verse/air" = "latest"
+"go:github.com/segmentio/golines" = "latest"
+"go:mvdan.cc/gofumpt" = "latest"
+"go:github.com/nametake/golangci-lint-langserver" = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
+"go:github.com/go-delve/delve/cmd/dlv" = "latest"
+"go:github.com/docker/docker-language-server/cmd/docker-language-server" = "latest"
+
+# usql with build tags (requires special handling - see note below)
+# "go:github.com/xo/usql" = "latest"  # TODO: Add build tags support
+
+[env]
+# mise can set environment variables (replaces direnv functionality)
+GOPATH = "{{ env.HOME }}/go"
+GO111MODULE = "on"
+
+# XDG directories
+XDG_CONFIG_HOME = "{{ env.HOME }}/.config"
+XDG_DATA_HOME = "{{ env.HOME }}/.local/share"
+XDG_CACHE_HOME = "{{ env.HOME }}/.cache"
+
+[tasks.setup]
+description = "Run dotfiles setup"
+run = "bash ./setup.sh"
+
+[tasks.update-tools]
+description = "Update all mise tools and show changes"
+run = [
+  "mise outdated",
+  "mise upgrade --bump",
+  "git diff .mise.toml"
+]
+
+[tasks.install-fonts]
+description = "Install fonts from fonts/ directory"
+run = "./scripts/backup-fonts.sh"
+
+[tasks.backup-iterm]
+description = "Backup iTerm2 settings (macOS)"
+run = "./scripts/backup-iterm.sh"
+
+[settings]
+# Automatically install tools when entering directory
+auto_install = true
+
+# Experimental features
+experimental = true
+
+# Legacy version file support (.nvmrc, .node-version, etc.)
+legacy_version_file = true
