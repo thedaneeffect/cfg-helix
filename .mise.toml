@@ -18,11 +18,12 @@ fzf = "latest"
 gh = "latest"
 glow = "latest"
 grex = "latest"
+# gum = "latest"   # Keep in Homebrew - needed early for interactive setup
 jq = "latest"
 ripgrep = "latest"
 sd = "latest"
 starship = "latest"
-# tldr = "latest"  # Keep in Homebrew - not in mise registry
+tlrc = "latest"
 # tokei = "latest"  # Keep in Homebrew - asset not found for macOS
 yq = "latest"
 zellij = "latest"
@@ -35,9 +36,6 @@ golangci-lint = "latest"
 marksman = "latest"  # Markdown LSP
 taplo = "latest"     # TOML toolkit
 zls = "latest"       # Zig LSP
-
-# Environment management (mise can activate direnv or replace it)
-direnv = "latest"
 
 # Go tools via go: backend
 "go:github.com/air-verse/air" = "latest"

@@ -1,10 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Detect user's login shell (not the shell running this script)
+# Detect user's login shell
 detect_shell() {
-    # Use $SHELL to detect the user's default shell
-    case "$(basename "$SHELL")" in
+    local shell_path=""
+
+    # Try to get login shell from system passwd database
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # macOS: use dscl
+        shell_path=$(dscl . -read ~/ UserShell 2>/dev/null | awk '{print $2}')
+    else
+        # Linux/WSL: use getent
+        shell_path=$(getent passwd "$USER" 2>/dev/null | cut -d: -f7)
+    fi
+
+    # Fallback to $SHELL environment variable
+    if [[ -z "$shell_path" ]]; then
+        shell_path="$SHELL"
+    fi
+
+    # Extract shell name and normalize
+    case "$(basename "$shell_path")" in
         zsh)
             echo "zsh"
             ;;
@@ -12,8 +28,15 @@ detect_shell() {
             echo "bash"
             ;;
         *)
-            # Fallback to bash if unknown
-            echo "bash"
+            # Check which rc file exists as final fallback
+            if [[ -f "$HOME/.zshrc" ]]; then
+                echo "zsh"
+            elif [[ -f "$HOME/.bashrc" ]]; then
+                echo "bash"
+            else
+                # Ultimate fallback to bash
+                echo "bash"
+            fi
             ;;
     esac
 }
@@ -23,21 +46,6 @@ RC_FILE="$HOME/.${SHELL_TYPE}rc"
 
 # Get script directory (works in both bash and zsh)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
-
-# Helper: Add content to shell rc file if not already present
-add_to_rc() {
-    local search_string="$1"
-    local content="$2"
-    local description="$3"
-
-    touch "$RC_FILE"
-    if ! grep -qF "$search_string" "$RC_FILE"; then
-        echo -e "\n$content" >> "$RC_FILE"
-        echo "✓ Configured $description"
-    else
-        echo "✓ $description (already configured)"
-    fi
-}
 
 # Helper: Initialize snippet section (called once at start)
 init_snippets() {
@@ -106,6 +114,29 @@ install_mise() {
     echo "✓ Installed mise"
 }
 
+# Install global mise configuration
+install_mise_config() {
+    local mise_config_dir="$HOME/.config/mise"
+    local mise_config="$mise_config_dir/config.toml"
+    local source_config="$SCRIPT_DIR/.mise.toml"
+
+    [[ -f "$source_config" ]] || { echo "✗ Error: $source_config not found"; return 1; }
+
+    mkdir -p "$mise_config_dir"
+
+    # Backup existing config if not a symlink
+    if [[ -f "$mise_config" ]] && [[ ! -L "$mise_config" ]]; then
+        backup_file "$mise_config"
+    fi
+
+    # Remove existing symlink or file
+    rm -f "$mise_config"
+
+    # Create symlink
+    ln -s "$source_config" "$mise_config"
+    echo "✓ Installed global mise configuration"
+}
+
 # Uninstall tools migrated to mise
 cleanup_homebrew_tools() {
     if ! command -v brew >/dev/null 2>&1; then
@@ -122,24 +153,10 @@ cleanup_homebrew_tools() {
     echo "→ Cleaning up Homebrew packages (migrated to mise)..."
 
     # List of packages to uninstall (migrated to mise)
-    local migrated=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh dust golangci-lint zig zls taplo goenv starship marksman grex zellij)
+    local migrated=(yq helix go fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq btop tldr sd glow tokei gh dust golangci-lint zig zls taplo goenv starship marksman grex zellij go-task procs)
 
-    # Uninstall each package if installed
-    for pkg in "${migrated[@]}"; do
-        if brew list "$pkg" &>/dev/null; then
-            brew uninstall "$pkg" -q || echo "  ⊘ Could not uninstall $pkg (may have dependents)"
-        fi
-    done
-
-    # Uninstall go-task from tap
-    if brew list go-task &>/dev/null; then
-        brew uninstall go-task -q || echo "  ⊘ Could not uninstall go-task"
-    fi
-
-    # Uninstall procs if present (not in mise, but was in original deps)
-    if brew list procs &>/dev/null; then
-        brew uninstall procs -q || echo "  ⊘ Could not uninstall procs"
-    fi
+    # Uninstall all packages at once (brew will skip packages that aren't installed)
+    brew uninstall -q "${migrated[@]}" 2>/dev/null || true
 
     echo "✓ Cleaned up Homebrew packages"
     echo "  Note: Some packages may remain if other tools depend on them"
@@ -147,10 +164,7 @@ cleanup_homebrew_tools() {
 
 # Ensure dependencies are installed
 ensure_dependencies() {
-    # Install mise first
-    install_mise
-
-    # Check for Homebrew
+    # Check for Homebrew first
     if ! command -v brew >/dev/null 2>&1; then
         echo "→ Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -162,6 +176,16 @@ ensure_dependencies() {
         echo "✓ Installed Homebrew"
     fi
 
+    # Install gum early for interactive setup
+    if ! command -v gum >/dev/null 2>&1; then
+        echo "→ Installing gum (for interactive setup)..."
+        brew install -q gum
+        echo "✓ Installed gum"
+    fi
+
+    # Install mise
+    install_mise
+
     # Install remaining Homebrew dependencies (system tools only)
     local deps=(gnupg typescript-language-server bash-language-server yaml-language-server vscode-langservers-extracted)
 
@@ -171,6 +195,57 @@ ensure_dependencies() {
     echo "→ Installing mise tools..."
     mise install
     echo "✓ Installed mise tools"
+}
+
+# Interactive component selection
+select_components() {
+    # Skip if gum not available or non-interactive
+    if ! command -v gum >/dev/null 2>&1 || [[ ! -t 0 ]]; then
+        # Default: install everything
+        INSTALL_FONTS=true
+        INSTALL_TERMINAL_SETTINGS=true
+        INSTALL_EDITOR_CONFIGS=true
+        INSTALL_GIT_CONFIG=true
+        INSTALL_SECRETS=true
+        INSTALL_SHELL_CONFIG=true
+        INSTALL_CLI_TOOLS=true
+        return 0
+    fi
+
+    gum style --border double --padding "1 2" --margin "1 0" \
+        "Dotfiles Setup" \
+        "" \
+        "Select components to install:"
+
+    local selected=$(gum choose --no-limit \
+        "Fonts" \
+        "Terminal settings (iTerm2/Windows Terminal)" \
+        "Editor configs (Helix/Zellij)" \
+        "Git configuration" \
+        "Secrets management" \
+        "Shell configuration (.bashrc/.zshrc)" \
+        "CLI tools (Go tools, Claude CLI)")
+
+    # Parse selections
+    INSTALL_FONTS=false
+    INSTALL_TERMINAL_SETTINGS=false
+    INSTALL_EDITOR_CONFIGS=false
+    INSTALL_GIT_CONFIG=false
+    INSTALL_SECRETS=false
+    INSTALL_SHELL_CONFIG=false
+    INSTALL_CLI_TOOLS=false
+
+    while IFS= read -r item; do
+        case "$item" in
+            "Fonts") INSTALL_FONTS=true ;;
+            "Terminal settings"*) INSTALL_TERMINAL_SETTINGS=true ;;
+            "Editor configs"*) INSTALL_EDITOR_CONFIGS=true ;;
+            "Git configuration") INSTALL_GIT_CONFIG=true ;;
+            "Secrets management") INSTALL_SECRETS=true ;;
+            "Shell configuration"*) INSTALL_SHELL_CONFIG=true ;;
+            "CLI tools"*) INSTALL_CLI_TOOLS=true ;;
+        esac
+    done <<< "$selected"
 }
 
 # Install bun
@@ -205,7 +280,7 @@ get_localappdata() {
 }
 
 # Install fonts from fonts/ directory
-install_fonts() {
+try_install_fonts() {
     local fonts_dir="$SCRIPT_DIR/fonts"
 
     # Skip if fonts directory doesn't exist or is empty
@@ -243,7 +318,7 @@ install_fonts() {
 }
 
 # Apply Windows Terminal settings
-apply_settings() {
+try_restore_winterm() {
     if ! is_wsl; then
         echo "⊘ Skipping Windows Terminal (not WSL)"
         return 0
@@ -272,7 +347,7 @@ apply_settings() {
 }
 
 # Restore iTerm2 settings
-restore_iterm_settings() {
+try_restore_iterm() {
     if ! is_macos; then
         echo "⊘ Skipping iTerm2 (not macOS)"
         return 0
@@ -573,75 +648,92 @@ main() {
     # Ensure dependencies are installed first
     ensure_dependencies
 
+    # Install global mise configuration
+    install_mise_config
+
     # Cleanup Homebrew packages migrated to mise
     cleanup_homebrew_tools
 
     install_bun
 
-    # Run all configurations
-    install_fonts
-    apply_settings
-    restore_iterm_settings
-    install_helix_config
-    install_zellij_config
-    configure_git
-    configure_secrets
+    # Interactive component selection
+    select_components
 
-    # Initialize snippet section
-    init_snippets
+    # Run configurations based on selections
+    [[ "$INSTALL_FONTS" == true ]] && try_install_fonts
 
-    # Add mise snippet FIRST (must load before tools)
-    add_snippet "mise" "mise (tool version manager)"
-
-    # Add all snippets
-    add_snippet "fzf" "fzf"
-    add_snippet "zoxide" "zoxide"
-    # REMOVED: add_snippet "direnv" "direnv"
-    # REMOVED: add_snippet "goenv" "goenv"
-    add_snippet "gopath" "GOPATH"
-    # REMOVED: add_snippet "task" "task completion"
-    add_snippet "bun" "bun"
-    add_snippet "local_bin" "~/.local/bin in PATH"
-    add_snippet "starship" "Starship prompt"
-    add_snippet "eza_aliases" "eza aliases"
-    add_snippet "git_aliases" "git aliases"
-    add_snippet "fzf_git" "fzf + git integration"
-    add_snippet "dev" "development utilities"
-    add_snippet "xdg" "XDG directories"
-    add_snippet "qol" "shell quality of life"
-
-    # Add secrets snippet only if it was created
-    local secrets_snippet="$SCRIPT_DIR/snippets/secrets.sh"
-    if [[ -f "$secrets_snippet" ]]; then
-        add_snippet "secrets" "secrets configuration"
-        # Delete secrets snippet file after it's been added (contains sensitive data)
-        rm -f "$secrets_snippet"
+    if [[ "$INSTALL_TERMINAL_SETTINGS" == true ]]; then
+        try_restore_winterm
+        try_restore_iterm
     fi
 
-    # Shell-specific snippets
-    if [ "$SHELL_TYPE" = "zsh" ]; then
-        [[ "$(uname)" = "Darwin" ]] && add_snippet "macos_bindkeys" "macOS bindkeys"
-        add_snippet "zsh_dirstack" "zsh features"
-        add_snippet "zsh_qol" "zsh history config"
-    else
-        add_snippet "bash_qol" "bash history config"
+    if [[ "$INSTALL_EDITOR_CONFIGS" == true ]]; then
+        install_helix_config
+        install_zellij_config
     fi
 
-    add_snippet "bootstrap" "bootstrap alias"
+    [[ "$INSTALL_GIT_CONFIG" == true ]] && configure_git
 
-    # Finalize snippet section
-    finalize_snippets
+    [[ "$INSTALL_SECRETS" == true ]] && configure_secrets
 
-    # Non-snippet configurations
-    install_go_tools
-    install_claude_cli
-    configure_claude_instructions
-    install_secrets_cli
-    setup_gpg_key
+    # Shell configuration
+    if [[ "$INSTALL_SHELL_CONFIG" == true ]]; then
+        # Initialize snippet section
+        init_snippets
 
-    echo "✓ Setup complete!"
+        # Add mise snippet FIRST (must load before tools)
+        add_snippet "mise" "mise (tool version manager)"
+
+        # Add all snippets
+        add_snippet "fzf" "fzf"
+        add_snippet "zoxide" "zoxide"
+        add_snippet "gopath" "GOPATH"
+        add_snippet "bun" "bun"
+        add_snippet "local_bin" "~/.local/bin in PATH"
+        add_snippet "starship" "Starship prompt"
+        add_snippet "eza_aliases" "eza aliases"
+        add_snippet "git_aliases" "git aliases"
+        add_snippet "fzf_git" "fzf + git integration"
+        add_snippet "dev" "development utilities"
+        add_snippet "xdg" "XDG directories"
+        add_snippet "qol" "shell quality of life"
+
+        # Add secrets snippet only if it was created
+        local secrets_snippet="$SCRIPT_DIR/snippets/secrets.sh"
+        if [[ -f "$secrets_snippet" ]]; then
+            add_snippet "secrets" "secrets configuration"
+            # Delete secrets snippet file after it's been added (contains sensitive data)
+            rm -f "$secrets_snippet"
+        fi
+
+        # Shell-specific snippets
+        if [ "$SHELL_TYPE" = "zsh" ]; then
+            [[ "$(uname)" = "Darwin" ]] && add_snippet "macos_bindkeys" "macOS bindkeys"
+            add_snippet "zsh_dirstack" "zsh features"
+            add_snippet "zsh_qol" "zsh history config"
+        else
+            add_snippet "bash_qol" "bash history config"
+        fi
+
+        add_snippet "bootstrap" "bootstrap alias"
+
+        # Finalize snippet section
+        finalize_snippets
+    fi
+
+    # CLI tools installation
+    if [[ "$INSTALL_CLI_TOOLS" == true ]]; then
+        install_go_tools
+        install_claude_cli
+        configure_claude_instructions
+        [[ "$INSTALL_SECRETS" == true ]] && install_secrets_cli
+        [[ "$INSTALL_SECRETS" == true ]] && setup_gpg_key
+    fi
+
     echo ""
-    echo "Run: source ~/.${SHELL_TYPE}rc"
+    gum style --border rounded --padding "1 2" --foreground 2 "✓ Setup complete!"
+    echo ""
+    [[ "$INSTALL_SHELL_CONFIG" == true ]] && echo "Run: source ~/.${SHELL_TYPE}rc"
 }
 
 main
