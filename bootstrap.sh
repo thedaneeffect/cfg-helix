@@ -2,17 +2,22 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/thedaneeffect/dotfiles.git"
-TEMP_DIR=$(mktemp -d)
+DOTFILES_DIR="$HOME/dotfiles"
 
-echo "→ Cloning configuration repository..."
-git clone --quiet "$REPO_URL" "$TEMP_DIR"
+# Clone or update dotfiles repository
+if [[ -d "$DOTFILES_DIR/.git" ]]; then
+    echo "→ Updating dotfiles repository..."
+    cd "$DOTFILES_DIR"
+    git pull --quiet
+else
+    echo "→ Cloning dotfiles repository..."
+    git clone --quiet "$REPO_URL" "$DOTFILES_DIR"
+    cd "$DOTFILES_DIR"
+fi
 
 echo "→ Running setup..."
-cd "$TEMP_DIR"
 bash setup.sh "$@"
-
-echo "→ Cleaning up..."
-rm -rf "$TEMP_DIR"
 
 echo ""
 echo "✓ Bootstrap complete!"
+echo "  Dotfiles repository: $DOTFILES_DIR"

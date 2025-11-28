@@ -5,7 +5,7 @@
 # Core languages & runtimes (installed first)
 bun = "latest"
 go = "latest"
-rust = "latest" # Needed for cargo: packages
+rust = "latest"
 zig = "latest"
 
 # CLI utilities
@@ -28,15 +28,15 @@ zoxide = "latest"
 # btop - not available for macOS arm64 via mise
 dust = "latest"
 grex = "latest"
-# gum - needed early for interactive setup
 # tokei - asset not found for macOS
 "ubi:tealdeer-rs/tealdeer" = "latest"
 
 # Development tools
 ast-grep = "latest"
 helix = "latest"
-golangci-lint = "latest"
 marksman = "latest"
+golangci-lint = "latest"
+"golangci-lint-langserver"="latest"
 taplo = "latest"
 zls = "latest"
 usql = "latest"
@@ -45,7 +45,6 @@ golines = "latest"
 gofumpt = "latest"
 
 # Go development tools via go: backend
-"golangci-lint-langserver"="latest"
 "go:golang.org/x/tools/gopls" = "latest"
 "go:github.com/go-delve/delve/cmd/dlv" = "latest"
 "go:github.com/docker/docker-language-server/cmd/docker-language-server" = "latest"

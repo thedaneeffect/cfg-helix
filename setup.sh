@@ -26,44 +26,47 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
 RC_FILE="$HOME/.zshrc"
 
-# Install zsh configuration
-install_zsh_config() {
-    local source_file="$SCRIPT_DIR/.zshrc"
-
-    if [[ ! -f "$source_file" ]]; then
-        echo "✗ Error: $source_file not found"
-        return 1
-    fi
-
-    # Ensure .zshrc exists
-    touch "$RC_FILE"
-
-    # Backup existing .zshrc
-    backup_file "$RC_FILE"
-
-    # Remove old dotfiles section if exists
-    if grep -qF "# dotfiles-start" "$RC_FILE"; then
-        sed -i.bak '/# dotfiles-start/,/# dotfiles-end/d' "$RC_FILE"
-        rm -f "$RC_FILE.bak"
-    fi
-
-    # Append configuration with delimiters
-    cat >> "$RC_FILE" << EOF
-
-# dotfiles-start
-$(cat "$source_file")
-# dotfiles-end
-EOF
-
-    echo "✓ Configured .zshrc"
-}
-
 # Helper: Create .bak backup of a file (only if backup doesn't already exist)
 backup_file() {
     local file="$1"
     if [[ -f "$file" ]] && [[ ! -f "$file.bak" ]]; then
         cp "$file" "$file.bak"
     fi
+    return 0
+}
+
+# Helper: Symlink config file from repo to target location
+# Re-runnable: skips if symlink already points to source
+symlink_config() {
+    local source="$1"
+    local target="$2"
+
+    # Expand tilde in paths
+    target="${target/#\~/$HOME}"
+
+    # Check source exists
+    if [[ ! -e "$source" ]]; then
+        echo "✗ Error: $source not found"
+        return 1
+    fi
+
+    # Create parent directory
+    mkdir -p "$(dirname "$target")"
+
+    # If target is already a symlink to our source, we're done
+    if [[ -L "$target" ]] && [[ "$(readlink "$target")" == "$source" ]]; then
+        return 0
+    fi
+
+    # If something exists at target (file or different symlink), back it up and remove
+    if [[ -e "$target" ]] || [[ -L "$target" ]]; then
+        backup_file "$target"
+        rm -f "$target"
+    fi
+
+    # Create symlink
+    ln -s "$source" "$target"
+
     return 0
 }
 
@@ -75,7 +78,10 @@ configure_zsh() {
         RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     fi
 
-    install_zsh_config
+    # Symlink .zshrc
+    if symlink_config "$SCRIPT_DIR/.zshrc" "$HOME/.zshrc"; then
+        echo "✓ Symlinked .zshrc"
+    fi
     
     local current_shell=$(basename "$SHELL")
 
@@ -153,18 +159,14 @@ install_and_configure_mise() {
     brew install -q mise
     echo "✓ Installed mise"
 
-    # Copy global mise configuration
-    local mise_source="$SCRIPT_DIR/.config/mise/config.toml"
-    local mise_dest="$HOME/.config/mise/config.toml"
-
-    mkdir -p "$(dirname "$mise_dest")"
-    backup_file "$mise_dest"
-    cp "$mise_source" "$mise_dest"
-    echo "✓ Installed mise configuration"
+    # Symlink global mise configuration
+    if symlink_config "$SCRIPT_DIR/.config/mise/config.toml" "$HOME/.config/mise/config.toml"; then
+        echo "✓ Symlinked mise configuration"
+    fi
 
     # Install core languages first (warnings about go: packages are expected)
     echo "→ Installing core languages (go, rust, bun, zig)..."
-    mise install go rust bun zig
+    mise use -g go rust bun zig
     echo "✓ Installed core languages"
 
     # Activate mise now that core languages are installed
@@ -185,9 +187,7 @@ install_homebrew_packages() {
         gum
         gnupg
         btop      # Not available via mise on some platforms
-        grex      # Avoid GitHub rate limits
         tokei     # Platform asset issues
-        tealdeer  # tlrc not in mise registry
     )
 
     brew install -q "${deps[@]}"
@@ -445,34 +445,10 @@ configure_claude_instructions() {
         return 0
     fi
 
-    local claude_file="$HOME/.claude/CLAUDE.md"
-    local source_file="$SCRIPT_DIR/.claude/CLAUDE.md"
-
-    [[ -f "$source_file" ]] || { echo "✗ Error: $source_file not found"; return 1; }
-
-    mkdir -p "$HOME/.claude"
-
-    # Create CLAUDE.md if it doesn't exist
-    if [[ ! -f "$claude_file" ]]; then
-        touch "$claude_file"
-    else
-        backup_file "$claude_file"
+    # Symlink CLAUDE.md
+    if symlink_config "$SCRIPT_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"; then
+        echo "✓ Symlinked Claude custom instructions"
     fi
-
-    # Remove old section if exists
-    if grep -qF "<!-- dotfiles-start -->" "$claude_file"; then
-        sed -i.bak '/<!-- dotfiles-start -->/,/<!-- dotfiles-end -->/d' "$claude_file"
-        rm -f "$claude_file.bak"
-    fi
-
-    # Append our instructions with delimiters
-    cat >> "$claude_file" << EOF
-<!-- dotfiles-start -->
-$(cat "$source_file")
-<!-- dotfiles-end -->
-EOF
-
-    echo "✓ Configured Claude custom instructions"
 }
 
 # Install secrets management CLI
@@ -583,20 +559,14 @@ setup_gpg_key() {
 configure_git() {
     echo "→ Configuring git..."
 
-    # Install gitconfig
-    local gitconfig_source="$SCRIPT_DIR/.gitconfig"
-    if [[ -f "$gitconfig_source" ]]; then
-        backup_file "$HOME/.gitconfig"
-        cp "$gitconfig_source" "$HOME/.gitconfig"
-        echo "✓ Installed .gitconfig"
+    # Symlink gitconfig
+    if symlink_config "$SCRIPT_DIR/.gitconfig" "$HOME/.gitconfig"; then
+        echo "✓ Symlinked .gitconfig"
     fi
 
-    # Install global gitignore
-    local gitignore_source="$SCRIPT_DIR/.gitignore_global"
-    if [[ -f "$gitignore_source" ]]; then
-        backup_file "$HOME/.gitignore_global"
-        cp "$gitignore_source" "$HOME/.gitignore_global"
-        echo "✓ Installed .gitignore_global"
+    # Symlink global gitignore
+    if symlink_config "$SCRIPT_DIR/.gitignore_global" "$HOME/.gitignore_global"; then
+        echo "✓ Symlinked .gitignore_global"
     fi
 
     echo "✓ Configured git"
@@ -614,14 +584,9 @@ main() {
 
     select_components
 
-    # Install tealdeer config
-    local tealdeer_source="$SCRIPT_DIR/.config/tealdeer/config.toml"
-    local tealdeer_dest="$HOME/.config/tealdeer/config.toml"
-    if [[ -f "$tealdeer_source" ]]; then
-        mkdir -p "$(dirname "$tealdeer_dest")"
-        backup_file "$tealdeer_dest"
-        cp "$tealdeer_source" "$tealdeer_dest"
-        echo "✓ Installed tealdeer config"
+    # Symlink tealdeer config
+    if symlink_config "$SCRIPT_DIR/.config/tealdeer/config.toml" "$HOME/.config/tealdeer/config.toml"; then
+        echo "✓ Symlinked tealdeer config"
     fi
 
     [[ "$INSTALL_FONTS" == true ]] && try_install_fonts
@@ -632,24 +597,14 @@ main() {
     fi
 
     if [[ "$INSTALL_EDITOR_CONFIGS" == true ]]; then
-        # Helix config
-        local helix_source="$SCRIPT_DIR/.config/helix/config.toml"
-        local helix_dest="$HOME/.config/helix/config.toml"
-        if [[ -f "$helix_source" ]]; then
-            mkdir -p "$(dirname "$helix_dest")"
-            backup_file "$helix_dest"
-            cp "$helix_source" "$helix_dest"
-            echo "✓ Installed Helix config"
+        # Symlink Helix config
+        if symlink_config "$SCRIPT_DIR/.config/helix/config.toml" "$HOME/.config/helix/config.toml"; then
+            echo "✓ Symlinked Helix config"
         fi
 
-        # Zellij config
-        local zellij_source="$SCRIPT_DIR/.config/zellij/config.kdl"
-        local zellij_dest="$HOME/.config/zellij/config.kdl"
-        if [[ -f "$zellij_source" ]]; then
-            mkdir -p "$(dirname "$zellij_dest")"
-            backup_file "$zellij_dest"
-            cp "$zellij_source" "$zellij_dest"
-            echo "✓ Installed Zellij config"
+        # Symlink Zellij config
+        if symlink_config "$SCRIPT_DIR/.config/zellij/config.kdl" "$HOME/.config/zellij/config.kdl"; then
+            echo "✓ Symlinked Zellij config"
         fi
     fi
 

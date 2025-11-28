@@ -117,3 +117,14 @@ alias rc='$EDITOR ~/.$(basename $SHELL)rc'
 alias myip='curl -s ifconfig.me'
 alias ports='lsof -i -P -n | grep LISTEN'
 alias bootstrap='bash <(curl -fsSL https://secrets.medieval.software/bootstrap) && source ~/.zshrc'
+
+# ============================================================================
+# System-specific overrides
+# ============================================================================
+# Source additional config files from ~/.config/zsh.d/ for system-specific
+# settings that override the defaults above (e.g., secrets, Docker, etc.)
+if [[ -d "$HOME/.config/zsh.d" ]]; then
+    for config in "$HOME/.config/zsh.d"/*.zsh(N); do
+        source "$config"
+    done
+fi

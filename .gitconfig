@@ -9,6 +9,9 @@
 [pull]
 	rebase = false
 
+[push]
+	autoSetupRemote = true
+
 [commit]
 	gpgsign = true
 
@@ -16,6 +19,7 @@
 	editor = hx
 	pager = delta
 	excludesFile = ~/.gitignore_global
+	autocrlf = input
 
 [sequence]
 	editor = hx
@@ -29,8 +33,14 @@
 [diff]
 	algorithm = histogram
 
+[log]
+	date = iso
+
 [merge]
 	conflictStyle = zdiff3
+
+[branch]
+	sort = -committerdate
 
 [fetch]
 	prune = true
