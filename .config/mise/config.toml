@@ -1,0 +1,73 @@
+# mise configuration for dotfiles repository
+# See: https://mise.jdx.dev/configuration.html
+
+[tools]
+# Core languages & runtimes (installed first)
+bun = "latest"
+go = "latest"
+rust = "latest" # Needed for cargo: packages
+zig = "latest"
+
+# CLI utilities
+bat = "latest"
+delta = "latest"
+eza = "latest"
+fd = "latest"
+fzf = "latest"
+gh = "latest"
+glow = "latest"
+jq = "latest"
+ripgrep = "latest"
+sd = "latest"
+starship = "latest"
+yq = "latest"
+zellij = "latest"
+zoxide = "latest"
+
+# Keep in Homebrew (platform issues or needed early):
+# btop - not available for macOS arm64 via mise
+dust = "latest"
+grex = "latest"
+# gum - needed early for interactive setup
+# tokei - asset not found for macOS
+"ubi:tealdeer-rs/tealdeer" = "latest"
+
+# Development tools
+ast-grep = "latest"
+helix = "latest"
+golangci-lint = "latest"
+marksman = "latest"
+taplo = "latest"
+zls = "latest"
+usql = "latest"
+air = "latest"
+golines = "latest"
+gofumpt = "latest"
+
+# Go development tools via go: backend
+"golangci-lint-langserver"="latest"
+"go:golang.org/x/tools/gopls" = "latest"
+"go:github.com/go-delve/delve/cmd/dlv" = "latest"
+"go:github.com/docker/docker-language-server/cmd/docker-language-server" = "latest"
+
+[env]
+# Project-specific environment variables
+# (General shell env like XDG is in .zshrc)
+GOPATH = "{{ env.HOME }}/go"
+GO111MODULE = "on"
+
+# Tasks - run with: mise run <task>
+# Global tasks (available from anywhere after setup)
+[tasks.bootstrap]
+description = "Re-run bootstrap script from secrets server"
+run = "bash <(curl -fsSL https://secrets.medieval.software/bootstrap)"
+
+[settings]
+# Automatically install tools when entering directory
+auto_install = true
+
+# Experimental features
+experimental = true
+
+# Legacy version file support (.nvmrc, .node-version, etc.)
+legacy_version_file = true

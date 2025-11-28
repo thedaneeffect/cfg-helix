@@ -17,6 +17,8 @@ export NPM_CONFIG_CACHE="$XDG_CACHE_HOME/npm"
 # ============================================================================
 export EDITOR=hx
 export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/share/cargo/bin:$PATH"
+export PATH="$HOME/go/bin:$PATH"
 
 # History
 export HISTFILE=~/.zsh_history

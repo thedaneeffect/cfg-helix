@@ -1,5 +1,0 @@
-.claude/*
-!.claude/custom_instructions.md
-
-# Secrets configuration (contains sensitive credentials)
-snippets/secrets.sh

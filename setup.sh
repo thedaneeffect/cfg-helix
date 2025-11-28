@@ -28,7 +28,7 @@ RC_FILE="$HOME/.zshrc"
 
 # Install zsh configuration
 install_zsh_config() {
-    local source_file="$SCRIPT_DIR/configs/zshrc"
+    local source_file="$SCRIPT_DIR/.zshrc"
 
     if [[ ! -f "$source_file" ]]; then
         echo "✗ Error: $source_file not found"
@@ -67,35 +67,6 @@ backup_file() {
     return 0
 }
 
-# Helper: Copy config file from configs/ to destination
-# Usage: copy_config "source.toml" "~/.config/app/config.toml"
-copy_config() {
-    local source_name="$1"
-    local dest_path="$2"
-
-    # Expand tilde in destination path
-    dest_path="${dest_path/#\~/$HOME}"
-
-    local source_file="$SCRIPT_DIR/configs/$source_name"
-
-    # Check source exists
-    if [[ ! -f "$source_file" ]]; then
-        echo "✗ Error: $source_file not found"
-        return 1
-    fi
-
-    # Create parent directory
-    mkdir -p "$(dirname "$dest_path")"
-
-    # Backup existing file
-    backup_file "$dest_path"
-
-    # Copy file
-    cp "$source_file" "$dest_path"
-
-    return 0
-}
-
 # Change default shell to zsh
 configure_zsh() {
     brew install -q zsh
@@ -129,6 +100,24 @@ configure_zsh() {
         fi
     fi
 }
+
+# ============================================================================
+# Package Management Strategy
+# ============================================================================
+# We use both mise AND Homebrew for different purposes:
+#
+# mise:
+#   - Development tools with per-project version support (go, rust, node, etc.)
+#   - CLI tools with version pinning (bat, ripgrep, fzf, etc.)
+#   - Defined in ~/.config/mise/config.toml globally
+#   - Projects can override with local .mise.toml
+#
+# Homebrew:
+#   - System tools and dependencies (gnupg)
+#   - Tools not available in mise (language servers, btop)
+#   - Tools with GitHub rate limit issues via mise (dust, grex)
+#   - Always uses latest versions
+# ============================================================================
 
 # Install Homebrew if not present
 install_homebrew() {
@@ -165,7 +154,13 @@ install_and_configure_mise() {
     echo "✓ Installed mise"
 
     # Copy global mise configuration
-    copy_config "mise.toml" "~/.config/mise/config.toml"
+    local mise_source="$SCRIPT_DIR/.config/mise/config.toml"
+    local mise_dest="$HOME/.config/mise/config.toml"
+
+    mkdir -p "$(dirname "$mise_dest")"
+    backup_file "$mise_dest"
+    cp "$mise_source" "$mise_dest"
+    echo "✓ Installed mise configuration"
 
     # Install core languages first (warnings about go: packages are expected)
     echo "→ Installing core languages (go, rust, bun, zig)..."
@@ -190,7 +185,6 @@ install_homebrew_packages() {
         gum
         gnupg
         btop      # Not available via mise on some platforms
-        dust      # Avoid GitHub rate limits
         grex      # Avoid GitHub rate limits
         tokei     # Platform asset issues
         tealdeer  # tlrc not in mise registry
@@ -383,7 +377,7 @@ try_restore_iterm() {
         return 0
     fi
 
-    local iterm_plist="$SCRIPT_DIR/configs/com.googlecode.iterm2.plist"
+    local iterm_plist="$SCRIPT_DIR/Library/Preferences/com.googlecode.iterm2.plist"
 
     if [[ ! -f "$iterm_plist" ]]; then
         echo "⊘ Skipping iTerm2 (settings file not found)"
@@ -452,7 +446,7 @@ configure_claude_instructions() {
     fi
 
     local claude_file="$HOME/.claude/CLAUDE.md"
-    local source_file="$SCRIPT_DIR/configs/CLAUDE.md"
+    local source_file="$SCRIPT_DIR/.claude/CLAUDE.md"
 
     [[ -f "$source_file" ]] || { echo "✗ Error: $source_file not found"; return 1; }
 
@@ -524,18 +518,23 @@ configure_secrets() {
         return 0
     fi
 
-    # Create secrets config file
-    mkdir -p "$HOME/.config/zsh"
-    local secrets_file="$HOME/.config/zsh/secrets.zsh"
-    cat > "$secrets_file" << EOF
+    # Ensure .zshrc exists
+    touch "$RC_FILE"
+
+    # Remove old secrets section if exists
+    if grep -qF "# dotfiles-secrets-start" "$RC_FILE"; then
+        sed -i.bak '/# dotfiles-secrets-start/,/# dotfiles-secrets-end/d' "$RC_FILE"
+        rm -f "$RC_FILE.bak"
+    fi
+
+    # Append secrets with delimiters
+    cat >> "$RC_FILE" << EOF
+
+# dotfiles-secrets-start
 export SECRETS_URL="$url"
 export SECRETS_PASSPHRASE="$passphrase"
+# dotfiles-secrets-end
 EOF
-
-    # Source it from .zshrc if not already
-    if ! grep -qF "source \"\$HOME/.config/zsh/secrets.zsh\"" "$RC_FILE"; then
-        echo "[ -f \"\$HOME/.config/zsh/secrets.zsh\" ] && source \"\$HOME/.config/zsh/secrets.zsh\"" >> "$RC_FILE"
-    fi
 
     # Export for current session so setup_gpg_key can use them
     export SECRETS_URL="$url"
@@ -583,53 +582,21 @@ setup_gpg_key() {
 # Configure git
 configure_git() {
     echo "→ Configuring git..."
-    git config --global user.name "dane"
-    git config --global user.email "dane@medieval.software"
-    git config --global user.signingkey 7B5FC82E53B5ABE6
-    git config --global init.defaultBranch main
-    git config --global pull.rebase false
-    git config --global commit.gpgsign true
 
-    if command -v hx >/dev/null 2>&1; then
-        git config --global core.editor "hx"
-        git config --global sequence.editor "hx"
-    fi
-
-    # Git aliases
-    git config --global alias.st status
-    git config --global alias.co checkout
-    git config --global alias.br branch
-    git config --global alias.lg "log --graph --oneline --decorate"
-    git config --global alias.cm "commit -m"
-    git config --global alias.amend "commit --amend --no-edit"
-    git config --global alias.uncommit "reset --soft HEAD~1"
-    git config --global alias.unstage "reset HEAD --"
-    git config --global alias.last "log -1 HEAD"
-    git config --global alias.branches "branch -a"
-    git config --global alias.remotes "remote -v"
-    git config --global alias.contributors "shortlog -sn"
-
-    # Better diff algorithm
-    git config --global diff.algorithm histogram
-
-    # Prune on fetch
-    git config --global fetch.prune true
-
-    # Reuse recorded resolution (helps with repetitive merge conflicts)
-    git config --global rerere.enabled true
-
-    # Configure delta as pager if available
-    if command -v delta >/dev/null 2>&1; then
-        git config --global core.pager delta
-        git config --global interactive.diffFilter "delta --color-only"
-        git config --global delta.navigate true
-        git config --global merge.conflictStyle zdiff3
+    # Install gitconfig
+    local gitconfig_source="$SCRIPT_DIR/.gitconfig"
+    if [[ -f "$gitconfig_source" ]]; then
+        backup_file "$HOME/.gitconfig"
+        cp "$gitconfig_source" "$HOME/.gitconfig"
+        echo "✓ Installed .gitconfig"
     fi
 
     # Install global gitignore
-    if copy_config "gitignore_global" "~/.gitignore_global"; then
-        git config --global core.excludesFile "$HOME/.gitignore_global"
-        echo "✓ Installed global gitignore"
+    local gitignore_source="$SCRIPT_DIR/.gitignore_global"
+    if [[ -f "$gitignore_source" ]]; then
+        backup_file "$HOME/.gitignore_global"
+        cp "$gitignore_source" "$HOME/.gitignore_global"
+        echo "✓ Installed .gitignore_global"
     fi
 
     echo "✓ Configured git"
@@ -647,7 +614,15 @@ main() {
 
     select_components
 
-    copy_config "tealdeer.toml" "~/.config/tealdeer/config.toml"
+    # Install tealdeer config
+    local tealdeer_source="$SCRIPT_DIR/.config/tealdeer/config.toml"
+    local tealdeer_dest="$HOME/.config/tealdeer/config.toml"
+    if [[ -f "$tealdeer_source" ]]; then
+        mkdir -p "$(dirname "$tealdeer_dest")"
+        backup_file "$tealdeer_dest"
+        cp "$tealdeer_source" "$tealdeer_dest"
+        echo "✓ Installed tealdeer config"
+    fi
 
     [[ "$INSTALL_FONTS" == true ]] && try_install_fonts
 
@@ -657,8 +632,25 @@ main() {
     fi
 
     if [[ "$INSTALL_EDITOR_CONFIGS" == true ]]; then
-        copy_config "helix.toml" "~/.config/helix/config.toml"
-        copy_config "zellij.kdl" "~/.config/zellij/config.kdl"
+        # Helix config
+        local helix_source="$SCRIPT_DIR/.config/helix/config.toml"
+        local helix_dest="$HOME/.config/helix/config.toml"
+        if [[ -f "$helix_source" ]]; then
+            mkdir -p "$(dirname "$helix_dest")"
+            backup_file "$helix_dest"
+            cp "$helix_source" "$helix_dest"
+            echo "✓ Installed Helix config"
+        fi
+
+        # Zellij config
+        local zellij_source="$SCRIPT_DIR/.config/zellij/config.kdl"
+        local zellij_dest="$HOME/.config/zellij/config.kdl"
+        if [[ -f "$zellij_source" ]]; then
+            mkdir -p "$(dirname "$zellij_dest")"
+            backup_file "$zellij_dest"
+            cp "$zellij_source" "$zellij_dest"
+            echo "✓ Installed Zellij config"
+        fi
     fi
 
     [[ "$INSTALL_GIT_CONFIG" == true ]] && configure_git
