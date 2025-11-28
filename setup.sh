@@ -449,6 +449,11 @@ configure_claude_instructions() {
     if symlink_config "$SCRIPT_DIR/.claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"; then
         echo "✓ Symlinked Claude custom instructions"
     fi
+
+    # Symlink settings.json
+    if symlink_config "$SCRIPT_DIR/.claude/settings.json" "$HOME/.claude/settings.json"; then
+        echo "✓ Symlinked Claude settings"
+    fi
 }
 
 # Install secrets management CLI
