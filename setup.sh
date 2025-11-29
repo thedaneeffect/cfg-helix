@@ -237,15 +237,15 @@ select_components() {
     # Skip if gum not available or non-interactive
     if ! command -v gum >/dev/null 2>&1 || [[ ! -t 0 ]]; then
         # Default: install everything
-        INSTALL_FONTS=true
-        INSTALL_TERMINAL_SETTINGS=true
+        INSTALL_SHELL_CONFIG=true
         INSTALL_EDITOR_CONFIGS=true
+        INSTALL_LANGUAGE_SERVERS=true
+        INSTALL_FONTS=true
         INSTALL_GIT_CONFIG=true
         INSTALL_SECRETS=true
-        INSTALL_SHELL_CONFIG=true
+        INSTALL_TERMINAL_SETTINGS=true
         INSTALL_DATABASE_TOOLS=true
         INSTALL_CLAUDE=true
-        INSTALL_LANGUAGE_SERVERS=true
         return 0
     fi
 
@@ -254,6 +254,25 @@ select_components() {
         "" \
         "Select components to install:"
 
+    # Component mapping: display name prefix -> variable name
+    declare -A components=(
+        ["Shell configuration"]="INSTALL_SHELL_CONFIG"
+        ["Editor configs"]="INSTALL_EDITOR_CONFIGS"
+        ["Language servers"]="INSTALL_LANGUAGE_SERVERS"
+        ["Fonts"]="INSTALL_FONTS"
+        ["Git configuration"]="INSTALL_GIT_CONFIG"
+        ["Secrets management"]="INSTALL_SECRETS"
+        ["Terminal settings"]="INSTALL_TERMINAL_SETTINGS"
+        ["Database tools"]="INSTALL_DATABASE_TOOLS"
+        ["Claude CLI"]="INSTALL_CLAUDE"
+    )
+
+    # Initialize all to false
+    for var in "${components[@]}"; do
+        declare "$var=false"
+    done
+
+    # Get user selections
     local selected=$(gum choose --no-limit \
         "Shell configuration (.zshrc)" \
         "Editor configs (Helix, Zellij)" \
@@ -266,28 +285,13 @@ select_components() {
         "Claude CLI")
 
     # Parse selections
-    INSTALL_DATABASE_TOOLS=false
-    INSTALL_CLAUDE=false
-    INSTALL_EDITOR_CONFIGS=false
-    INSTALL_FONTS=false
-    INSTALL_GIT_CONFIG=false
-    INSTALL_SECRETS=false
-    INSTALL_SHELL_CONFIG=false
-    INSTALL_TERMINAL_SETTINGS=false
-    INSTALL_LANGUAGE_SERVERS=false
-
     while IFS= read -r item; do
-        case "$item" in
-            "Editor configs"*) INSTALL_EDITOR_CONFIGS=true ;;
-            "Language servers"*) INSTALL_LANGUAGE_SERVERS=true ;;
-            "Fonts") INSTALL_FONTS=true ;;
-            "Git configuration"*) INSTALL_GIT_CONFIG=true ;;
-            "Secrets management"*) INSTALL_SECRETS=true ;;
-            "Shell configuration"*) INSTALL_SHELL_CONFIG=true ;;
-            "Terminal settings"*) INSTALL_TERMINAL_SETTINGS=true ;;
-            "Database tools"*) INSTALL_DATABASE_TOOLS=true ;;
-            "Claude CLI"*) INSTALL_CLAUDE=true ;;
-        esac
+        for prefix in "${!components[@]}"; do
+            if [[ "$item" == "$prefix"* ]]; then
+                declare "${components[$prefix]}=true"
+                break
+            fi
+        done
     done <<< "$selected"
 }
 
@@ -419,7 +423,7 @@ install_database_tools() {
     echo "→ Installing database tools..."
 
     # usql requires build tags (not supported by mise go: backend)
-    go_install "github.com/xo/usql" "usql" "postgres sqlite3"
+    mise use -g usql
 
     echo "✓ Installed database tools"
 }
@@ -619,10 +623,6 @@ main() {
         configure_secrets
         install_secrets_cli
         setup_gpg_key
-    fi
-
-    if [[ "$INSTALL_DATABASE_TOOLS" == true ]]; then
-        install_database_tools
     fi
 
     if [[ "$INSTALL_CLAUDE" == true ]]; then
