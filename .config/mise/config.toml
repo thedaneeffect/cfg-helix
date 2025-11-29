@@ -44,6 +44,12 @@ air = "latest"
 golines = "latest"
 gofumpt = "latest"
 
+# Language servers via npm: backend
+"npm:typescript-language-server" = "latest"
+"npm:bash-language-server" = "latest"
+"npm:yaml-language-server" = "latest"
+"npm:vscode-langservers-extracted" = "latest"
+
 # Go development tools via go: backend
 "go:golang.org/x/tools/gopls" = "latest"
 "go:github.com/go-delve/delve/cmd/dlv" = "latest"

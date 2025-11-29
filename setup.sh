@@ -217,21 +217,6 @@ cleanup_homebrew_tools() {
     echo "✓ Cleaned up Homebrew packages"
 }
 
-# Install language servers
-install_language_servers() {
-    echo "→ Installing language servers..."
-
-    local lsp_servers=(
-        typescript-language-server
-        bash-language-server
-        yaml-language-server
-        vscode-langservers-extracted
-    )
-
-    brew install -q "${lsp_servers[@]}"
-    echo "✓ Installed language servers"
-}
-
 # Interactive component selection
 select_components() {
     # Skip if gum not available or non-interactive
@@ -239,12 +224,10 @@ select_components() {
         # Default: install everything
         INSTALL_SHELL_CONFIG=true
         INSTALL_EDITOR_CONFIGS=true
-        INSTALL_LANGUAGE_SERVERS=true
         INSTALL_FONTS=true
         INSTALL_GIT_CONFIG=true
         INSTALL_SECRETS=true
         INSTALL_TERMINAL_SETTINGS=true
-        INSTALL_DATABASE_TOOLS=true
         INSTALL_CLAUDE=true
         return 0
     fi
@@ -258,12 +241,10 @@ select_components() {
     declare -A components=(
         ["Shell configuration"]="INSTALL_SHELL_CONFIG"
         ["Editor configs"]="INSTALL_EDITOR_CONFIGS"
-        ["Language servers"]="INSTALL_LANGUAGE_SERVERS"
         ["Fonts"]="INSTALL_FONTS"
         ["Git configuration"]="INSTALL_GIT_CONFIG"
         ["Secrets management"]="INSTALL_SECRETS"
         ["Terminal settings"]="INSTALL_TERMINAL_SETTINGS"
-        ["Database tools"]="INSTALL_DATABASE_TOOLS"
         ["Claude CLI"]="INSTALL_CLAUDE"
     )
 
@@ -276,12 +257,10 @@ select_components() {
     local selected=$(gum choose --no-limit \
         "Shell configuration (.zshrc)" \
         "Editor configs (Helix, Zellij)" \
-        "Language servers (TypeScript, Bash, YAML, etc.)" \
         "Fonts" \
         "Git configuration (GPG signing)" \
         "Secrets management (Cloudflare Worker)" \
         "Terminal settings (iTerm2, Windows Terminal)" \
-        "Database tools (usql)" \
         "Claude CLI")
 
     # Parse selections
@@ -411,21 +390,6 @@ go_install() {
     else
         go install "$package@latest"
     fi
-}
-
-# Install database tools with special requirements
-install_database_tools() {
-    if ! command -v go >/dev/null 2>&1; then
-        echo "⊘ Skipping database tools (Go not installed)"
-        return 0
-    fi
-
-    echo "→ Installing database tools..."
-
-    # usql requires build tags (not supported by mise go: backend)
-    mise use -g usql
-
-    echo "✓ Installed database tools"
 }
 
 # Install Claude CLI
