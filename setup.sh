@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# This script is written to support Bash 3.2
+
 set -euo pipefail
 
 # Uncomment for debugging: set -x
@@ -23,10 +25,12 @@ if [[ $EUID -eq 0 ]] && [[ -z "${ALLOW_ROOT:-}" ]]; then
 fi
 
 # Get script directory (works in both bash and zsh)
+# BASH_SOURCE[0] for bash, ${(%):-%N} for zsh
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
 RC_FILE="$HOME/.zshrc"
 
 # Helper: Create .bak backup of a file (only if backup doesn't already exist)
+# WHY: Preserve the first backup if script is run multiple times
 backup_file() {
     local file="$1"
     if [[ -f "$file" ]] && [[ ! -f "$file.bak" ]]; then
@@ -75,6 +79,8 @@ configure_zsh() {
     brew install -q zsh
 
     if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+        # RUNZSH=no: Don't exec zsh after install (would stop script)
+        # CHSH=no: We handle shell change ourselves
         RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     fi
 
@@ -96,7 +102,7 @@ configure_zsh() {
         fi
 
         # Change shell (may require password or sudo)
-        # Try sudo first (works in Docker/containers), fall back to regular chsh
+        # WHY sudo first: Docker containers often have passwordless sudo but no TTY for password prompt
         if sudo chsh -s "$zsh_path" "$USER" 2>/dev/null || chsh -s "$zsh_path" 2>/dev/null; then
             echo "✓ Changed default shell to zsh"
             echo "  Note: Will take effect on next login or run 'exec zsh' to switch now"
@@ -170,6 +176,7 @@ install_and_configure_mise() {
     echo "✓ Installed core languages"
 
     # Activate mise now that core languages are installed
+    # WHY now: Remaining mise tools may depend on go/rust/etc being available
     export PATH="$HOME/.local/bin:$PATH"
     eval "$(mise activate bash)"
 
@@ -211,7 +218,7 @@ cleanup_homebrew_tools() {
     # Keep in Homebrew: btop, dust, grex, tokei, tealdeer/tldr, gum
     local migrated=(yq helix go rust fzf zoxide ripgrep bat eza ast-grep fd direnv git-delta jq sd glow gh golangci-lint zig zls taplo goenv starship marksman zellij go-task procs)
 
-    # Uninstall all packages at once (brew will skip packages that aren't installed)
+    # WHY || true: Some packages may not be installed, that's fine
     brew uninstall -q "${migrated[@]}" 2>/dev/null || true
 
     echo "✓ Cleaned up Homebrew packages"
@@ -242,6 +249,7 @@ select_components() {
     local component_vars=(INSTALL_SHELL_CONFIG INSTALL_EDITOR_CONFIGS INSTALL_FONTS INSTALL_GIT_CONFIG INSTALL_SECRETS INSTALL_TERMINAL_SETTINGS INSTALL_CLAUDE)
 
     # Initialize all to false
+    # WHY eval: Bash 3.2 requires eval for dynamic variable assignment in function scope
     for var in "${component_vars[@]}"; do
         eval "$var=false"
     done
@@ -363,9 +371,10 @@ try_restore_iterm() {
     local iterm_prefs="$HOME/Library/Preferences/com.googlecode.iterm2.plist"
 
     backup_file "$iterm_prefs"
+    # WHY copy not symlink: iTerm2 writes to its plist, would pollute repo
     cp "$iterm_plist" "$iterm_prefs"
 
-    # Reload iTerm2 preferences (kill cfprefsd to force reload)
+    # WHY: Force macOS to reload preferences from disk
     killall cfprefsd 2>/dev/null || true
 
     echo "✓ Restored iTerm2 settings"
@@ -391,7 +400,7 @@ install_claude_cli() {
         return 0
     fi
 
-    # Add ~/.local/bin to current session PATH
+    # WHY: Claude installer puts binary in ~/.local/bin, needed for detection
     export PATH="$HOME/.local/bin:$PATH"
 
     echo "→ Installing Claude CLI..."
@@ -465,6 +474,7 @@ configure_secrets() {
 
     # Remove old secrets section if exists
     if grep -qF "# dotfiles-secrets-start" "$RC_FILE"; then
+        # WHY .bak then rm: macOS sed -i requires a backup extension
         sed -i.bak '/# dotfiles-secrets-start/,/# dotfiles-secrets-end/d' "$RC_FILE"
         rm -f "$RC_FILE.bak"
     fi
@@ -478,7 +488,7 @@ export SECRETS_PASSPHRASE="$passphrase"
 # dotfiles-secrets-end
 EOF
 
-    # Export for current session so setup_gpg_key can use them
+    # WHY: Export for current session so setup_gpg_key can use them immediately
     export SECRETS_URL="$url"
     export SECRETS_PASSPHRASE="$passphrase"
 
