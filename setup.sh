@@ -237,20 +237,13 @@ select_components() {
         "" \
         "Select components to install:"
 
-    # Component mapping: display name prefix -> variable name
-    declare -A components=(
-        ["Shell configuration"]="INSTALL_SHELL_CONFIG"
-        ["Editor configs"]="INSTALL_EDITOR_CONFIGS"
-        ["Fonts"]="INSTALL_FONTS"
-        ["Git configuration"]="INSTALL_GIT_CONFIG"
-        ["Secrets management"]="INSTALL_SECRETS"
-        ["Terminal settings"]="INSTALL_TERMINAL_SETTINGS"
-        ["Claude CLI"]="INSTALL_CLAUDE"
-    )
+    # Component mapping: parallel arrays for display prefixes and variable names
+    local component_prefixes=("Shell configuration" "Editor configs" "Fonts" "Git configuration" "Secrets management" "Terminal settings" "Claude CLI")
+    local component_vars=(INSTALL_SHELL_CONFIG INSTALL_EDITOR_CONFIGS INSTALL_FONTS INSTALL_GIT_CONFIG INSTALL_SECRETS INSTALL_TERMINAL_SETTINGS INSTALL_CLAUDE)
 
     # Initialize all to false
-    for var in "${components[@]}"; do
-        declare "$var=false"
+    for var in "${component_vars[@]}"; do
+        eval "$var=false"
     done
 
     # Get user selections
@@ -265,9 +258,9 @@ select_components() {
 
     # Parse selections
     while IFS= read -r item; do
-        for prefix in "${!components[@]}"; do
-            if [[ "$item" == "$prefix"* ]]; then
-                declare "${components[$prefix]}=true"
+        for i in "${!component_prefixes[@]}"; do
+            if [[ "$item" == "${component_prefixes[$i]}"* ]]; then
+                eval "${component_vars[$i]}=true"
                 break
             fi
         done
