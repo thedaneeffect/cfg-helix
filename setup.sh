@@ -368,17 +368,13 @@ try_restore_iterm() {
         return 0
     fi
 
-    local iterm_prefs="$HOME/Library/Preferences/com.googlecode.iterm2.plist"
-
-    backup_file "$iterm_prefs"
-    # WHY copy not symlink: iTerm2 writes to its plist, would pollute repo
-    cp "$iterm_plist" "$iterm_prefs"
-
-    # WHY: Force macOS to reload preferences from disk
-    killall cfprefsd 2>/dev/null || true
-
-    echo "✓ Restored iTerm2 settings"
-    echo "  Note: Restart iTerm2 for changes to take effect"
+    # Symlink iTerm2 preferences
+    if symlink_config "$iterm_plist" "$HOME/Library/Preferences/com.googlecode.iterm2.plist"; then
+        # WHY: Force macOS to reload preferences from disk
+        killall cfprefsd 2>/dev/null || true
+        echo "✓ Symlinked iTerm2 settings"
+        echo "  Note: Restart iTerm2 for changes to take effect"
+    fi
 }
 
 # Helper: Install Go tool via go install
